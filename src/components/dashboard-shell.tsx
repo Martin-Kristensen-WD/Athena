@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { QuickAddFab } from "@/components/quick-add-fab";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -189,6 +190,7 @@ export function DashboardShell({
           {children}
         </div>
       </SidebarInset>
+      <QuickAddFab />
     </SidebarProvider>
   );
 }
