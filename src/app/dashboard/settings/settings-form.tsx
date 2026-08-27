@@ -135,6 +135,25 @@ export function SettingsForm({
 
             <FormField
               control={form.control}
+              name="dailyCalorieTarget"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Daily calorie target (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="1"
+                      {...field}
+                      value={(field.value as string | number | undefined) ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="trackedMetricKeys"
               render={({ field }) => (
                 <FormItem>

@@ -35,6 +35,7 @@ export const profiles = pgTable("profiles", {
   goalTargetValue: numeric("goal_target_value"),
   goalTargetDate: date("goal_target_date"),
   milestoneTargetValue: numeric("milestone_target_value"),
+  dailyCalorieTarget: numeric("daily_calorie_target"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

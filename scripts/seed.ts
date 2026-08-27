@@ -30,6 +30,27 @@ const metricCatalog: (typeof schema.metricDefinitions.$inferInsert)[] = [
     icon: "flame",
   },
   {
+    key: "protein",
+    label: "Protein",
+    unit: "g",
+    dataType: "number",
+    icon: "beef",
+  },
+  {
+    key: "carbs",
+    label: "Carbs",
+    unit: "g",
+    dataType: "number",
+    icon: "wheat",
+  },
+  {
+    key: "fat",
+    label: "Fat",
+    unit: "g",
+    dataType: "number",
+    icon: "droplet",
+  },
+  {
     key: "sleep_hours",
     label: "Sleep",
     unit: "hours",

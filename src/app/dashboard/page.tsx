@@ -359,7 +359,7 @@ export default async function DashboardPage() {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          href="/dashboard/tracking/calories"
+          href="/dashboard/food"
           title="Calorie intake"
           icon={Flame}
           unit="kcal"
