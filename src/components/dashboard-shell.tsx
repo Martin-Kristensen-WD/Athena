@@ -14,6 +14,7 @@ import {
   Settings,
   ShieldCheck,
   ChevronsUpDown,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -95,6 +96,9 @@ function UserMenu({ user }: { user: DashboardUser }) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
+          <UserRound /> Profile
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
           <Settings /> Settings
         </DropdownMenuItem>

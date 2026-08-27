@@ -18,13 +18,7 @@ export async function updateSettings(values: SettingsInput) {
     return { error: "Please check the form and try again." };
   }
 
-  const {
-    goalType,
-    goalTargetValue,
-    dailyCalorieTarget,
-    dailyStepsTarget,
-    trackedMetricKeys,
-  } = parsed.data;
+  const { goalType, trackedMetricKeys } = parsed.data;
   const userId = session.user.id;
   const db = getDb();
 
@@ -32,13 +26,6 @@ export async function updateSettings(values: SettingsInput) {
     .update(profiles)
     .set({
       goalType,
-      goalTargetValue:
-        goalTargetValue !== undefined ? goalTargetValue.toString() : null,
-      goalTargetMetricKey: goalTargetValue !== undefined ? "weight" : null,
-      dailyCalorieTarget:
-        dailyCalorieTarget !== undefined ? dailyCalorieTarget.toString() : null,
-      dailyStepsTarget:
-        dailyStepsTarget !== undefined ? dailyStepsTarget.toString() : null,
       updatedAt: new Date(),
     })
     .where(eq(profiles.userId, userId));

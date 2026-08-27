@@ -37,18 +37,6 @@ export default async function SettingsPage() {
 
   const initialValues = {
     goalType: profile?.goalType ?? ("maintain" as const),
-    goalTargetValue:
-      profile?.goalTargetValue !== null && profile?.goalTargetValue !== undefined
-        ? Number(profile.goalTargetValue)
-        : undefined,
-    dailyCalorieTarget:
-      profile?.dailyCalorieTarget !== null && profile?.dailyCalorieTarget !== undefined
-        ? Number(profile.dailyCalorieTarget)
-        : undefined,
-    dailyStepsTarget:
-      profile?.dailyStepsTarget !== null && profile?.dailyStepsTarget !== undefined
-        ? Number(profile.dailyStepsTarget)
-        : undefined,
     trackedMetricKeys: trackedKeys,
   };
 

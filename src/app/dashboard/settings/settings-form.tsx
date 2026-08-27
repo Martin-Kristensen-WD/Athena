@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +22,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -75,7 +75,12 @@ export function SettingsForm({
       <CardHeader>
         <CardTitle>Goal &amp; tracking</CardTitle>
         <CardDescription>
-          Update your goal and which metrics you want to track.
+          Update your goal type and which metrics you want to track. Target
+          weight and daily targets live on your{" "}
+          <Link href="/dashboard/profile" className="underline underline-offset-2">
+            profile
+          </Link>
+          .
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -108,63 +113,6 @@ export function SettingsForm({
                         </label>
                       ))}
                     </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="goalTargetValue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target weight (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      {...field}
-                      value={(field.value as string | number | undefined) ?? ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="dailyCalorieTarget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Daily calorie target (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="1"
-                      {...field}
-                      value={(field.value as string | number | undefined) ?? ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="dailyStepsTarget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Daily steps target (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="1"
-                      {...field}
-                      value={(field.value as string | number | undefined) ?? ""}
-                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
