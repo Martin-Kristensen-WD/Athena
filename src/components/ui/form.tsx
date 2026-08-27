@@ -100,7 +100,7 @@ function FormLabel({
   )
 }
 
-function FormControl({ children, ...props }: { children: React.ReactElement<any> } & Record<string, unknown>) {
+function FormControl({ children, ...props }: { children: React.ReactElement<Record<string, unknown>> } & Record<string, unknown>) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return React.cloneElement(children, {
