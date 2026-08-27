@@ -202,27 +202,7 @@ function StatCard({
   const { definition, isTracked, currentAverage, previousAverage } = data;
 
   if (!definition || !isTracked) {
-    return (
-      <Card>
-        <CardHeader className="flex items-center gap-3 space-y-0">
-          <CardIcon icon={icon} />
-          <div>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>Spores ikke endnu</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Button
-            size="sm"
-            variant="outline"
-            nativeButton={false}
-            render={<Link href="/dashboard/settings" />}
-          >
-            Aktivér i indstillinger
-          </Button>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   if (currentAverage === null) {

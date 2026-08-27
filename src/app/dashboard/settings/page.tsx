@@ -2,7 +2,15 @@ import { redirect } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
-import { metricDefinitions, profiles, userTrackedMetrics } from "@/db/schema";
+import { metricDefinitions, userTrackedMetrics } from "@/db/schema";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
@@ -13,12 +21,6 @@ export default async function SettingsPage() {
 
   const userId = session.user.id;
   const db = getDb();
-
-  const [profile] = await db
-    .select()
-    .from(profiles)
-    .where(eq(profiles.userId, userId))
-    .limit(1);
 
   const metrics = await db
     .select()
@@ -36,19 +38,29 @@ export default async function SettingsPage() {
     .map((metric) => metric.key);
 
   const initialValues = {
-    goalType: profile?.goalType ?? ("maintain" as const),
     trackedMetricKeys: trackedKeys,
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Indstillinger</h1>
-      <p className="text-muted-foreground mt-2">
-        Administrer dit mål, og hvilke målinger du sporer.
-      </p>
-      <div className="mt-6">
-        <SettingsForm metrics={metrics} initialValues={initialValues} />
+    <div className="grid gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Indstillinger</h1>
+        <p className="text-muted-foreground mt-2">
+          Administrer udseende og hvilke kort der vises på dashboardet.
+        </p>
       </div>
+
+      <Card className="max-w-lg">
+        <CardHeader>
+          <CardTitle>Udseende</CardTitle>
+          <CardDescription>Vælg mellem lyst og mørkt tema.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ThemeToggle />
+        </CardContent>
+      </Card>
+
+      <SettingsForm metrics={metrics} initialValues={initialValues} />
     </div>
   );
 }

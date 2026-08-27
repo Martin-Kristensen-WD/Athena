@@ -4,7 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
-import { metricDefinitions, profiles, userTrackedMetrics } from "@/db/schema";
+import { metricDefinitions, userTrackedMetrics } from "@/db/schema";
 import { settingsSchema, type SettingsInput } from "@/lib/validations/settings";
 
 export async function updateSettings(values: SettingsInput) {
@@ -18,17 +18,9 @@ export async function updateSettings(values: SettingsInput) {
     return { error: "Tjek formularen, og prøv igen." };
   }
 
-  const { goalType, trackedMetricKeys } = parsed.data;
+  const { trackedMetricKeys } = parsed.data;
   const userId = session.user.id;
   const db = getDb();
-
-  await db
-    .update(profiles)
-    .set({
-      goalType,
-      updatedAt: new Date(),
-    })
-    .where(eq(profiles.userId, userId));
 
   const catalog = await db
     .select({ id: metricDefinitions.id, key: metricDefinitions.key })

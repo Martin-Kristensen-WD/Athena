@@ -8,6 +8,7 @@ function optionalCoercedNumber<T extends z.ZodTypeAny>(schema: T) {
 }
 
 export const profileSchema = z.object({
+  goalType: z.enum(["lose_weight", "gain_muscle", "maintain"]),
   milestoneTargetValue: optionalCoercedNumber(
     z.coerce.number().positive("Indtast et gyldigt mål")
   ),

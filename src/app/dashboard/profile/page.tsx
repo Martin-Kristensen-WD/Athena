@@ -20,6 +20,7 @@ export default async function ProfilePage() {
     .limit(1);
 
   const initialValues = {
+    goalType: profile?.goalType ?? ("maintain" as const),
     milestoneTargetValue:
       profile?.milestoneTargetValue !== null && profile?.milestoneTargetValue !== undefined
         ? Number(profile.milestoneTargetValue)

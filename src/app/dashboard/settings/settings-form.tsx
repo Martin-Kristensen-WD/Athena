@@ -1,7 +1,6 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,6 @@ import {
 } from "@/components/ui/card";
 import {
   Form,
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
@@ -24,18 +22,11 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { metricDefinitions as metricDefinitionsTable } from "@/db/schema";
 import { settingsSchema, type SettingsInput } from "@/lib/validations/settings";
 import { updateSettings } from "./actions";
 
 type MetricDefinition = typeof metricDefinitionsTable.$inferSelect;
-
-const GOAL_OPTIONS: { value: SettingsInput["goalType"]; label: string; description: string }[] = [
-  { value: "lose_weight", label: "Tab dig", description: "Følg din udvikling mod en lavere målvægt." },
-  { value: "gain_muscle", label: "Byg muskler", description: "Følg din styrke og vægt over tid." },
-  { value: "maintain", label: "Vedligehold", description: "Hold din vægt stabil omkring nuværende niveau." },
-];
 
 export function SettingsForm({
   metrics,
@@ -73,52 +64,15 @@ export function SettingsForm({
   return (
     <Card className="max-w-lg">
       <CardHeader>
-        <CardTitle>Mål &amp; sporing</CardTitle>
+        <CardTitle>Dashboard-kort</CardTitle>
         <CardDescription>
-          Opdater din måltype, og hvilke målinger du vil spore. Målvægt og
-          daglige mål findes på din{" "}
-          <Link href="/dashboard/profile" className="underline underline-offset-2">
-            profil
-          </Link>
-          .
+          Vælg hvilke ting du vil spore. Slår du en fra, forsvinder dens kort
+          fra dashboardet.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
-            <FormField
-              control={form.control}
-              name="goalType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dit mål</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      className="grid gap-3"
-                    >
-                      {GOAL_OPTIONS.map((option) => (
-                        <label
-                          key={option.value}
-                          className="flex items-start gap-3 rounded-lg border border-border p-3 has-[[data-checked]]:border-primary"
-                        >
-                          <RadioGroupItem value={option.value} className="mt-1" />
-                          <span>
-                            <span className="block font-medium">{option.label}</span>
-                            <span className="text-muted-foreground text-sm">
-                              {option.description}
-                            </span>
-                          </span>
-                        </label>
-                      ))}
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
               name="trackedMetricKeys"

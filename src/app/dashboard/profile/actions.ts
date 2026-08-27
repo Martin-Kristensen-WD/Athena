@@ -18,14 +18,20 @@ export async function updateProfile(values: ProfileInput) {
     return { error: "Tjek formularen, og prøv igen." };
   }
 
-  const { milestoneTargetValue, goalTargetValue, dailyCalorieTarget, dailyStepsTarget } =
-    parsed.data;
+  const {
+    goalType,
+    milestoneTargetValue,
+    goalTargetValue,
+    dailyCalorieTarget,
+    dailyStepsTarget,
+  } = parsed.data;
   const userId = session.user.id;
   const db = getDb();
 
   await db
     .update(profiles)
     .set({
+      goalType,
       milestoneTargetValue:
         milestoneTargetValue !== undefined ? milestoneTargetValue.toString() : null,
       goalTargetValue:
