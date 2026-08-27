@@ -10,12 +10,12 @@ import { settingsSchema, type SettingsInput } from "@/lib/validations/settings";
 export async function updateSettings(values: SettingsInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = settingsSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const { goalType, trackedMetricKeys } = parsed.data;

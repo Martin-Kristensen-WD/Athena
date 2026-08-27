@@ -33,21 +33,21 @@ export default async function NewSessionPage(
     return (
       <div className="max-w-md">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Start a session
+          Start et træningspas
         </h1>
         <p className="text-muted-foreground mt-1">
-          Pick a programme to log a session against.
+          Vælg et program at registrere et træningspas ud fra.
         </p>
         {userProgrammes.length === 0 ? (
           <p className="text-muted-foreground mt-6 rounded-lg border border-dashed p-6 text-center text-sm">
-            You don&apos;t have any programmes yet.{" "}
+            Du har ikke oprettet nogen programmer endnu.{" "}
             <Link
               href="/dashboard/workouts/programmes/new"
               className="text-foreground underline"
             >
-              Create one
+              Opret et
             </Link>{" "}
-            first.
+            først.
           </p>
         ) : (
           <div className="mt-6">
@@ -88,14 +88,14 @@ export default async function NewSessionPage(
           {programme.name}
         </h1>
         <p className="text-muted-foreground mt-6 rounded-lg border border-dashed p-6 text-center text-sm">
-          This programme has no exercises yet.{" "}
+          Dette program har ingen øvelser endnu.{" "}
           <Link
             href={`/dashboard/workouts/programmes/${programme.id}`}
             className="text-foreground underline"
           >
-            Add some
+            Tilføj nogle
           </Link>{" "}
-          before logging a session.
+          før du registrerer et træningspas.
         </p>
       </div>
     );
@@ -104,10 +104,10 @@ export default async function NewSessionPage(
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">
-        Log session: {programme.name}
+        Registrer træningspas: {programme.name}
       </h1>
       <p className="text-muted-foreground mt-1">
-        Enter what you actually did for each set.
+        Indtast hvad du faktisk lavede for hvert sæt.
       </p>
       <div className="mt-6">
         <SessionLogForm programmeId={programme.id} exercises={plannedExercises} />

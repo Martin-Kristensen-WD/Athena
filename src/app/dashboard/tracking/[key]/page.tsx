@@ -78,7 +78,7 @@ export default async function MetricDetailPage({
   const chartData = [...entries]
     .reverse()
     .map((entry) => ({
-      date: entry.loggedAt.toLocaleDateString(undefined, {
+      date: entry.loggedAt.toLocaleDateString("da-DK", {
         month: "short",
         day: "numeric",
       }),
@@ -92,14 +92,14 @@ export default async function MetricDetailPage({
           {definition.label}
         </h1>
         <p className="text-muted-foreground mt-2">
-          Log entries and track your {definition.label.toLowerCase()} trend
-          over time.
+          Registrer målinger, og følg din udvikling for {definition.label.toLowerCase()} over
+          tid.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Log an entry</CardTitle>
+          <CardTitle>Registrer en post</CardTitle>
         </CardHeader>
         <CardContent>
           <MetricLogForm metricKey={definition.key} unit={definition.unit} />
@@ -108,7 +108,7 @@ export default async function MetricDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Trend</CardTitle>
+          <CardTitle>Udvikling</CardTitle>
         </CardHeader>
         <CardContent>
           <MetricTrendChart data={chartData} unit={definition.unit} />
@@ -117,7 +117,7 @@ export default async function MetricDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>History</CardTitle>
+          <CardTitle>Historik</CardTitle>
         </CardHeader>
         <CardContent>
           <MetricHistoryTable entries={historyRows} unit={definition.unit} />

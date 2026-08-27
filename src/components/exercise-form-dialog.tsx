@@ -48,7 +48,7 @@ export function ExerciseFormDialog({
   title,
   description,
   defaultValues,
-  submitLabel = "Save",
+  submitLabel = "Gem",
   onSubmit,
 }: {
   open: boolean;
@@ -99,9 +99,9 @@ export function ExerciseFormDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Navn</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Barbell Squat" {...field} />
+                    <Input placeholder="fx Barbell Squat" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -112,11 +112,11 @@ export function ExerciseFormDialog({
               name="muscleGroup"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Muscle group</FormLabel>
+                  <FormLabel>Muskelgruppe</FormLabel>
                   <FormControl>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a muscle group" />
+                        <SelectValue placeholder="Vælg en muskelgruppe" />
                       </SelectTrigger>
                       <SelectContent>
                         {MUSCLE_GROUP_OPTIONS.map((option) => (
@@ -136,10 +136,10 @@ export function ExerciseFormDialog({
               name="equipment"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Equipment (optional)</FormLabel>
+                  <FormLabel>Udstyr (valgfrit)</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="e.g. Barbell"
+                      placeholder="fx Barbell"
                       {...field}
                       value={field.value ?? ""}
                     />
@@ -153,10 +153,10 @@ export function ExerciseFormDialog({
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes (optional)</FormLabel>
+                  <FormLabel>Noter (valgfrit)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Form cues, tempo, etc."
+                      placeholder="Udførelsestips, tempo osv."
                       {...field}
                       value={field.value ?? ""}
                     />
@@ -176,10 +176,10 @@ export function ExerciseFormDialog({
                 variant="outline"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Annullér
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : submitLabel}
+                {isSubmitting ? "Gemmer..." : submitLabel}
               </Button>
             </DialogFooter>
           </form>

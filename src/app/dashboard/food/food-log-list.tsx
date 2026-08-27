@@ -44,7 +44,7 @@ function DeleteDayButton({ date }: { date: string }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Day removed");
+      toast.success("Dag fjernet");
       router.refresh();
     });
   }
@@ -54,27 +54,27 @@ function DeleteDayButton({ date }: { date: string }) {
       <AlertDialogTrigger
         render={
           <Button size="icon-sm" variant="ghost">
-            <span className="sr-only">Delete day</span>
+            <span className="sr-only">Slet dag</span>
             &times;
           </Button>
         }
       />
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this day&apos;s log?</AlertDialogTitle>
+          <AlertDialogTitle>Slet denne dags registrering?</AlertDialogTitle>
           <AlertDialogDescription>
-            This removes all food entries logged for this day. This action
-            can&apos;t be undone.
+            Dette fjerner alle madregistreringer for denne dag. Denne
+            handling kan ikke fortrydes.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Annullér</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={isPending}
             onClick={handleDelete}
           >
-            {isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Sletter..." : "Slet"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -86,7 +86,7 @@ export function FoodLogList({ rows }: { rows: FoodDayRow[] }) {
   if (rows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        No food logged for this month yet.
+        Ingen mad registreret for denne måned endnu.
       </p>
     );
   }
@@ -95,11 +95,11 @@ export function FoodLogList({ rows }: { rows: FoodDayRow[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Date</TableHead>
+          <TableHead>Dato</TableHead>
           <TableHead>Kcal</TableHead>
           <TableHead>Protein</TableHead>
-          <TableHead>Carbs</TableHead>
-          <TableHead>Fat</TableHead>
+          <TableHead>Kulhydrater</TableHead>
+          <TableHead>Fedt</TableHead>
           <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
@@ -107,23 +107,23 @@ export function FoodLogList({ rows }: { rows: FoodDayRow[] }) {
         {rows.map((row) => (
           <TableRow key={row.date}>
             <TableCell>
-              {new Date(`${row.date}T00:00:00`).toLocaleDateString(undefined, {
+              {new Date(`${row.date}T00:00:00`).toLocaleDateString("da-DK", {
                 weekday: "short",
                 month: "short",
                 day: "numeric",
               })}
             </TableCell>
             <TableCell className="font-mono tabular-nums">
-              {row.kcal.toLocaleString()}
+              {row.kcal.toLocaleString("da-DK")}
             </TableCell>
             <TableCell className="font-mono tabular-nums">
-              {row.protein > 0 ? `${row.protein.toLocaleString()}g` : "—"}
+              {row.protein > 0 ? `${row.protein.toLocaleString("da-DK")}g` : "—"}
             </TableCell>
             <TableCell className="font-mono tabular-nums">
-              {row.carbs > 0 ? `${row.carbs.toLocaleString()}g` : "—"}
+              {row.carbs > 0 ? `${row.carbs.toLocaleString("da-DK")}g` : "—"}
             </TableCell>
             <TableCell className="font-mono tabular-nums">
-              {row.fat > 0 ? `${row.fat.toLocaleString()}g` : "—"}
+              {row.fat > 0 ? `${row.fat.toLocaleString("da-DK")}g` : "—"}
             </TableCell>
             <TableCell>
               <DeleteDayButton date={row.date} />

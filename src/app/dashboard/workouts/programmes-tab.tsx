@@ -56,13 +56,13 @@ export async function ProgrammesTab() {
           nativeButton={false}
           render={<Link href="/dashboard/workouts/programmes/new" />}
         >
-          <Plus /> New programme
+          <Plus /> Nyt program
         </Button>
       </div>
 
       {list.length === 0 ? (
         <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-          You haven&apos;t created any programmes yet.
+          Du har ikke oprettet nogen programmer endnu.
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -83,7 +83,7 @@ export async function ProgrammesTab() {
                   )}
                   <p className="text-muted-foreground mt-2 text-xs">
                     {programme.exerciseCount}{" "}
-                    {programme.exerciseCount === 1 ? "exercise" : "exercises"}
+                    {programme.exerciseCount === 1 ? "øvelse" : "øvelser"}
                   </p>
                 </CardContent>
               </Card>

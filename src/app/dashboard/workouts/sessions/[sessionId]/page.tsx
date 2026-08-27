@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
+import { da } from "date-fns/locale";
 import { asc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
@@ -71,7 +72,7 @@ export default async function SessionDetailPage(
       existing.sets.push({ setIndex: row.setIndex, reps: row.reps, weight: row.weight });
     } else {
       groups.set(key, {
-        label: row.exerciseName ?? "Exercise removed from programme",
+        label: row.exerciseName ?? "Øvelse fjernet fra program",
         sets: [{ setIndex: row.setIndex, reps: row.reps, weight: row.weight }],
       });
     }
@@ -82,10 +83,10 @@ export default async function SessionDetailPage(
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {workoutSession.programmeName ?? "Freeform session"}
+            {workoutSession.programmeName ?? "Frit træningspas"}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {format(workoutSession.startedAt, "PPP p")}
+            {format(workoutSession.startedAt, "PPP p", { locale: da })}
             {workoutSession.durationMinutes != null &&
               ` · ${workoutSession.durationMinutes} min`}
           </p>
@@ -102,7 +103,7 @@ export default async function SessionDetailPage(
       <div className="mt-6 grid gap-4">
         {groups.size === 0 ? (
           <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-            No sets logged for this session.
+            Ingen sæt registreret for dette træningspas.
           </p>
         ) : (
           Array.from(groups.values()).map((group, index) => (
@@ -114,9 +115,9 @@ export default async function SessionDetailPage(
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-16">Set</TableHead>
+                      <TableHead className="w-16">Sæt</TableHead>
                       <TableHead>Reps</TableHead>
-                      <TableHead>Weight</TableHead>
+                      <TableHead>Vægt</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

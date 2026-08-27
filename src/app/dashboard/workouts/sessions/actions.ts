@@ -14,12 +14,12 @@ import {
 export async function createWorkoutSession(values: WorkoutSessionInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = workoutSessionSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const userId = session.user.id;
@@ -32,7 +32,7 @@ export async function createWorkoutSession(values: WorkoutSessionInput) {
     .limit(1);
 
   if (!programme || programme.userId !== userId) {
-    return { error: "Programme not found." };
+    return { error: "Programmet blev ikke fundet." };
   }
 
   const db = getTransactionalDb();
@@ -71,7 +71,7 @@ export async function createWorkoutSession(values: WorkoutSessionInput) {
 export async function deleteWorkoutSession(sessionId: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const db = getDb();
@@ -82,7 +82,7 @@ export async function deleteWorkoutSession(sessionId: string) {
     .limit(1);
 
   if (!existing || existing.userId !== session.user.id) {
-    return { error: "Session not found." };
+    return { error: "Træningspasset blev ikke fundet." };
   }
 
   await db.delete(workoutSessions).where(eq(workoutSessions.id, sessionId));

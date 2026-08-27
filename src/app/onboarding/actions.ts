@@ -15,12 +15,12 @@ import { onboardingSchema, type OnboardingInput } from "@/lib/validations/onboar
 export async function completeOnboarding(values: OnboardingInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = onboardingSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const { startingWeight, weightUnit, goalType, goalTargetValue, trackedMetricKeys } =
@@ -79,7 +79,7 @@ export async function completeOnboarding(values: OnboardingInput) {
       metricDefinitionId: weightDefinition.id,
       value: startingWeight.toString(),
       loggedAt: new Date(),
-      note: "Starting weight from onboarding",
+      note: "Startvægt fra opsætning",
     });
   }
 

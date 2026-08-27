@@ -55,7 +55,7 @@ export function StepsLogForm() {
         setFormError(result.error);
         return;
       }
-      toast.success("Steps logged");
+      toast.success("Skridt registreret");
       form.reset({
         date: toLocalDateInputValue(new Date()),
         steps: undefined,
@@ -73,7 +73,7 @@ export function StepsLogForm() {
             name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date</FormLabel>
+                <FormLabel>Dato</FormLabel>
                 <FormControl>
                   <Input type="date" {...field} />
                 </FormControl>
@@ -86,7 +86,7 @@ export function StepsLogForm() {
             name="steps"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Steps</FormLabel>
+                <FormLabel>Skridt</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -103,7 +103,7 @@ export function StepsLogForm() {
         {formError && <p className="text-destructive text-sm">{formError}</p>}
         <div>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Logging..." : "Log steps"}
+            {isPending ? "Registrerer..." : "Registrer skridt"}
           </Button>
         </div>
       </form>

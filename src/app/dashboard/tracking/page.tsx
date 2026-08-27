@@ -13,9 +13,9 @@ export default async function TrackingPage() {
   if (!userId) {
     return (
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Tracking</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Sporing</h1>
         <p className="text-muted-foreground mt-2">
-          You need to be signed in to view your tracked metrics.
+          Du skal være logget ind for at se dine sporede målinger.
         </p>
       </div>
     );
@@ -63,17 +63,17 @@ export default async function TrackingPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Tracking</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Sporing</h1>
       <p className="text-muted-foreground mt-2">
-        The metrics you&apos;re currently tracking.
+        De målinger, du sporer lige nu.
       </p>
 
       {trackedMetrics.length === 0 ? (
         <Card className="mt-6">
           <CardContent>
             <p className="text-muted-foreground">
-              You aren&apos;t tracking any metrics yet. Enable some from your
-              settings to start logging entries.
+              Du sporer ingen målinger endnu. Aktivér nogle fra dine
+              indstillinger for at begynde at registrere.
             </p>
           </CardContent>
         </Card>
@@ -88,8 +88,8 @@ export default async function TrackingPage() {
                     <p className="font-medium">{metric.label}</p>
                     <p className="text-muted-foreground text-sm">
                       {latest
-                        ? `${Number(latest.value).toLocaleString()} ${metric.unit} · ${latest.loggedAt.toLocaleDateString()}`
-                        : `No entries yet · ${metric.unit}`}
+                        ? `${Number(latest.value).toLocaleString("da-DK")} ${metric.unit} · ${latest.loggedAt.toLocaleDateString("da-DK")}`
+                        : `Ingen registreringer endnu · ${metric.unit}`}
                     </p>
                   </div>
                   <Button
@@ -98,7 +98,7 @@ export default async function TrackingPage() {
                     nativeButton={false}
                     render={<Link href={`/dashboard/tracking/${metric.key}`} />}
                   >
-                    View
+                    Se
                   </Button>
                 </CardContent>
               </Card>

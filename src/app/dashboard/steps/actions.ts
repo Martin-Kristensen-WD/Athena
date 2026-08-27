@@ -18,17 +18,17 @@ function parseDayStart(dateStr: string) {
 export async function logStepsEntry(values: LogStepsEntryInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = logStepsEntrySchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const dayStart = parseDayStart(parsed.data.date);
   if (!dayStart) {
-    return { error: "Please enter a valid date." };
+    return { error: "Indtast en gyldig dato." };
   }
   const loggedAt = new Date(dayStart.getTime() + 12 * 60 * 60 * 1000);
 
@@ -41,7 +41,7 @@ export async function logStepsEntry(values: LogStepsEntryInput) {
     .where(eq(metricDefinitions.key, "steps"));
 
   if (!definition) {
-    return { error: "Steps metric is not configured." };
+    return { error: "Skridt-målingen er ikke konfigureret." };
   }
 
   const [tracked] = await db
@@ -77,12 +77,12 @@ export async function logStepsEntry(values: LogStepsEntryInput) {
 export async function deleteStepsDay(dateStr: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const dayStart = parseDayStart(dateStr);
   if (!dayStart) {
-    return { error: "Invalid date." };
+    return { error: "Ugyldig dato." };
   }
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 

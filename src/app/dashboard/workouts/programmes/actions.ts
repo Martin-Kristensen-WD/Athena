@@ -11,12 +11,12 @@ import { programmeSchema, type ProgrammeInput } from "@/lib/validations/programm
 export async function createProgramme(values: ProgrammeInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = programmeSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const { name, description, exercises } = parsed.data;
@@ -58,12 +58,12 @@ export async function updateProgramme(
 ) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = programmeSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const userId = session.user.id;
@@ -75,7 +75,7 @@ export async function updateProgramme(
     .limit(1);
 
   if (!existing || existing.userId !== userId) {
-    return { error: "Programme not found." };
+    return { error: "Programmet blev ikke fundet." };
   }
 
   const { name, description, exercises } = parsed.data;
@@ -119,7 +119,7 @@ export async function updateProgramme(
 export async function deleteProgramme(programmeId: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const userId = session.user.id;
@@ -131,7 +131,7 @@ export async function deleteProgramme(programmeId: string) {
     .limit(1);
 
   if (!existing || existing.userId !== userId) {
-    return { error: "Programme not found." };
+    return { error: "Programmet blev ikke fundet." };
   }
 
   await db.delete(programmes).where(eq(programmes.id, programmeId));

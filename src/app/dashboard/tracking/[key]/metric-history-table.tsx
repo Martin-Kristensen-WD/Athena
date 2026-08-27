@@ -43,7 +43,7 @@ function DeleteEntryButton({ entryId }: { entryId: string }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Entry deleted");
+      toast.success("Post slettet");
       router.refresh();
     });
   }
@@ -53,27 +53,27 @@ function DeleteEntryButton({ entryId }: { entryId: string }) {
       <AlertDialogTrigger
         render={
           <Button size="icon-sm" variant="ghost">
-            <span className="sr-only">Delete entry</span>
+            <span className="sr-only">Slet post</span>
             &times;
           </Button>
         }
       />
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
+          <AlertDialogTitle>Slet denne post?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently remove this entry. This action can&apos;t
-            be undone.
+            Dette fjerner posten permanent. Denne handling kan ikke
+            fortrydes.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Annullér</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={isPending}
             onClick={handleDelete}
           >
-            {isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Sletter..." : "Slet"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -91,7 +91,7 @@ export function MetricHistoryTable({
   if (entries.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        No entries logged yet.
+        Ingen registreringer endnu.
       </p>
     );
   }
@@ -100,8 +100,8 @@ export function MetricHistoryTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead>Value</TableHead>
+          <TableHead>Dato</TableHead>
+          <TableHead>Værdi</TableHead>
           <TableHead>Note</TableHead>
           <TableHead className="w-10" />
         </TableRow>
@@ -110,10 +110,10 @@ export function MetricHistoryTable({
         {entries.map((entry) => (
           <TableRow key={entry.id}>
             <TableCell>
-              {new Date(entry.loggedAt).toLocaleString()}
+              {new Date(entry.loggedAt).toLocaleString("da-DK")}
             </TableCell>
             <TableCell>
-              {Number(entry.value).toLocaleString()} {unit}
+              {Number(entry.value).toLocaleString("da-DK")} {unit}
             </TableCell>
             <TableCell className="max-w-64 truncate whitespace-normal text-muted-foreground">
               {entry.note ?? ""}

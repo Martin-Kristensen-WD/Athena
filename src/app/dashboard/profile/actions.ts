@@ -10,12 +10,12 @@ import { profileSchema, type ProfileInput } from "@/lib/validations/profile";
 export async function updateProfile(values: ProfileInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = profileSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const { milestoneTargetValue, goalTargetValue, dailyCalorieTarget, dailyStepsTarget } =

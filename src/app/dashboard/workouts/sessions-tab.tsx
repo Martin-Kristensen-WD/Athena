@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format } from "date-fns";
+import { da } from "date-fns/locale";
 import { desc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
@@ -66,13 +67,13 @@ export async function SessionsTab() {
           nativeButton={false}
           render={<Link href="/dashboard/workouts/sessions/new" />}
         >
-          <Plus /> Log session
+          <Plus /> Registrer træningspas
         </Button>
       </div>
 
       {sessions.length === 0 ? (
         <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-          No workout sessions logged yet.
+          Ingen træningspas registreret endnu.
         </p>
       ) : (
         <div className="grid gap-3">
@@ -84,16 +85,14 @@ export async function SessionsTab() {
               <Card className="transition-colors hover:bg-muted/50">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base">
-                    {item.programmeName ?? "Freeform session"}
+                    {item.programmeName ?? "Frit træningspas"}
                   </CardTitle>
                   <span className="text-muted-foreground text-sm">
-                    {format(item.startedAt, "PPP")}
+                    {format(item.startedAt, "PPP", { locale: da })}
                   </span>
                 </CardHeader>
                 <CardContent className="text-muted-foreground flex gap-4 text-sm">
-                  <span>
-                    {item.setCount} {item.setCount === 1 ? "set" : "sets"}
-                  </span>
+                  <span>{item.setCount} sæt</span>
                   {item.durationMinutes != null && (
                     <span>{item.durationMinutes} min</span>
                   )}

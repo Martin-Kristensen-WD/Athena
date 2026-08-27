@@ -11,22 +11,22 @@ function optionalCoercedNumber<T extends z.ZodTypeAny>(schema: T) {
 }
 
 export const programmeExerciseSchema = z.object({
-  exerciseId: z.string().uuid("Pick an exercise"),
+  exerciseId: z.string().uuid("Vælg en øvelse"),
   exerciseName: z.string().optional(),
   muscleGroup: z.string().optional(),
-  sets: z.coerce.number().int().positive("Enter a number of sets"),
-  targetReps: z.string().min(1, "Enter target reps"),
-  targetWeight: optionalCoercedNumber(z.coerce.number().positive("Enter a valid weight")),
-  restSeconds: optionalCoercedNumber(z.coerce.number().int().nonnegative("Enter a valid duration")),
+  sets: z.coerce.number().int().positive("Angiv et antal sæt"),
+  targetReps: z.string().min(1, "Angiv mål-reps"),
+  targetWeight: optionalCoercedNumber(z.coerce.number().positive("Indtast en gyldig vægt")),
+  restSeconds: optionalCoercedNumber(z.coerce.number().int().nonnegative("Indtast en gyldig varighed")),
   notes: z.string().optional(),
 });
 
 export const programmeSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, "Navn er påkrævet"),
   description: z.string().optional(),
   exercises: z
     .array(programmeExerciseSchema)
-    .min(1, "Add at least one exercise"),
+    .min(1, "Tilføj mindst én øvelse"),
 });
 
 export type ProgrammeExerciseInput = z.infer<typeof programmeExerciseSchema>;

@@ -11,7 +11,7 @@ import { signIn } from "@/auth";
 export async function signupAction(values: SignupInput) {
   const parsed = signupSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Invalid signup details" };
+    return { error: "Ugyldige oplysninger. Tjek formularen, og prøv igen." };
   }
 
   const { name, email, password } = parsed.data;
@@ -25,7 +25,7 @@ export async function signupAction(values: SignupInput) {
     .limit(1);
 
   if (existing) {
-    return { error: "An account with this email already exists" };
+    return { error: "Der findes allerede en konto med denne e-mail." };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -44,7 +44,7 @@ export async function signupAction(values: SignupInput) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Account created, but sign-in failed. Please log in." };
+      return { error: "Kontoen blev oprettet, men login mislykkedes. Log ind." };
     }
     throw error;
   }

@@ -14,21 +14,21 @@ export const exerciseFormSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, "Name is required")
-    .max(200, "Name is too long"),
+    .min(1, "Navn er påkrævet")
+    .max(200, "Navnet er for langt"),
   muscleGroup: z.enum(muscleGroupEnum.enumValues, {
-    error: "Select a muscle group",
+    error: "Vælg en muskelgruppe",
   }),
   equipment: z
     .string()
     .trim()
-    .max(200, "Equipment is too long")
+    .max(200, "Udstyr er for langt")
     .optional()
     .or(z.literal("")),
   notes: z
     .string()
     .trim()
-    .max(2000, "Notes are too long")
+    .max(2000, "Noter er for lange")
     .optional()
     .or(z.literal("")),
 });

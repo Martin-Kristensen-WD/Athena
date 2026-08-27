@@ -41,10 +41,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/food", label: "Food", icon: Flame },
-  { href: "/dashboard/steps", label: "Steps", icon: Footprints },
-  { href: "/dashboard/tracking", label: "Tracking", icon: LineChart },
-  { href: "/dashboard/workouts", label: "Workouts", icon: Dumbbell },
+  { href: "/dashboard/food", label: "Kost", icon: Flame },
+  { href: "/dashboard/steps", label: "Skridt", icon: Footprints },
+  { href: "/dashboard/tracking", label: "Sporing", icon: LineChart },
+  { href: "/dashboard/workouts", label: "Træning", icon: Dumbbell },
 ];
 
 type DashboardUser = {
@@ -78,7 +78,7 @@ function UserMenu({ user }: { user: DashboardUser }) {
             </Avatar>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-medium text-sidebar-foreground">
-                {user.name ?? "Account"}
+                {user.name ?? "Konto"}
               </span>
               <span className="truncate text-xs text-muted-foreground">
                 {user.email}
@@ -91,16 +91,16 @@ function UserMenu({ user }: { user: DashboardUser }) {
       <DropdownMenuContent align="end" side="top" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col">
-            <span className="font-medium">{user.name ?? "Account"}</span>
+            <span className="font-medium">{user.name ?? "Konto"}</span>
             <span className="text-muted-foreground text-xs">{user.email}</span>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
-          <UserRound /> Profile
+          <UserRound /> Profil
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
-          <Settings /> Settings
+          <Settings /> Indstillinger
         </DropdownMenuItem>
         {user.role === "admin" && (
           <DropdownMenuItem onClick={() => router.push("/admin/exercises")}>
@@ -109,7 +109,7 @@ function UserMenu({ user }: { user: DashboardUser }) {
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
-          <LogOut /> Sign out
+          <LogOut /> Log ud
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -28,7 +28,7 @@ export function ProgrammePicker({
         onValueChange={(value) => setSelected(value ?? undefined)}
       >
         <SelectTrigger className="w-full">
-          <SelectValue placeholder="Choose a programme" />
+          <SelectValue placeholder="Vælg et program" />
         </SelectTrigger>
         <SelectContent>
           {programmes.map((programme) => (
@@ -46,7 +46,7 @@ export function ProgrammePicker({
           }
         }}
       >
-        Continue
+        Fortsæt
       </Button>
     </div>
   );

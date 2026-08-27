@@ -20,10 +20,10 @@ function normalize(values: ExerciseFormInput) {
 async function requireAdmin() {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." } as const;
+    return { error: "Du skal være logget ind." } as const;
   }
   if (session.user.role !== "admin") {
-    return { error: "You do not have permission to do this." } as const;
+    return { error: "Du har ikke rettigheder til at gøre dette." } as const;
   }
   return { session } as const;
 }
@@ -34,7 +34,7 @@ export async function createSystemExercise(values: ExerciseFormInput) {
 
   const parsed = exerciseFormSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const db = getDb();
@@ -46,7 +46,7 @@ export async function createSystemExercise(values: ExerciseFormInput) {
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { error: "A catalog exercise with this name already exists." };
+      return { error: "Der findes allerede en katalogøvelse med dette navn." };
     }
     throw error;
   }
@@ -64,7 +64,7 @@ export async function updateSystemExercise(
 
   const parsed = exerciseFormSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const db = getDb();
@@ -76,11 +76,11 @@ export async function updateSystemExercise(
       .returning({ id: exercises.id });
 
     if (result.length === 0) {
-      return { error: "Exercise not found." };
+      return { error: "Øvelsen blev ikke fundet." };
     }
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { error: "A catalog exercise with this name already exists." };
+      return { error: "Der findes allerede en katalogøvelse med dette navn." };
     }
     throw error;
   }
@@ -101,12 +101,12 @@ export async function deleteSystemExercise(id: string) {
       .returning({ id: exercises.id });
 
     if (result.length === 0) {
-      return { error: "Exercise not found." };
+      return { error: "Øvelsen blev ikke fundet." };
     }
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       return {
-        error: "This exercise is used in a programme and can't be deleted.",
+        error: "Denne øvelse bruges i et program og kan ikke slettes.",
       };
     }
     throw error;

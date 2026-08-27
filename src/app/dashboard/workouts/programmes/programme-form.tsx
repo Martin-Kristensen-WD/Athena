@@ -131,7 +131,7 @@ export function ProgrammeForm({
         return;
       }
 
-      toast.success(programmeId ? "Programme updated" : "Programme created");
+      toast.success(programmeId ? "Program opdateret" : "Program oprettet");
       const targetId =
         programmeId ?? ("programmeId" in result ? result.programmeId : undefined);
       if (targetId) {
@@ -156,9 +156,9 @@ export function ProgrammeForm({
             name="name"
             render={({ field }) => (
               <FormItem className="sm:col-span-2">
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Navn</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. Upper body strength" {...field} />
+                  <Input placeholder="fx Styrke, overkrop" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -169,10 +169,10 @@ export function ProgrammeForm({
             name="description"
             render={({ field }) => (
               <FormItem className="sm:col-span-2">
-                <FormLabel>Description (optional)</FormLabel>
+                <FormLabel>Beskrivelse (valgfrit)</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="What is this programme for?"
+                    placeholder="Hvad skal dette program bruges til?"
                     {...field}
                     value={field.value ?? ""}
                   />
@@ -185,20 +185,20 @@ export function ProgrammeForm({
 
         <div>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Exercises</h2>
+            <h2 className="text-sm font-medium">Øvelser</h2>
             <Button type="button" size="sm" onClick={() => setPickerOpen(true)}>
-              <Plus /> Add exercise
+              <Plus /> Tilføj øvelse
             </Button>
           </div>
           <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Add an exercise</DialogTitle>
+                <DialogTitle>Tilføj en øvelse</DialogTitle>
               </DialogHeader>
               <Command className="rounded-lg border">
-                <CommandInput placeholder="Search exercises..." />
+                <CommandInput placeholder="Søg efter øvelser..." />
                 <CommandList>
-                  <CommandEmpty>No exercises found.</CommandEmpty>
+                  <CommandEmpty>Ingen øvelser fundet.</CommandEmpty>
                   {groupedExercises.map(([muscleGroup, items]) => (
                     <CommandGroup
                       key={muscleGroup}
@@ -223,20 +223,20 @@ export function ProgrammeForm({
 
           {fields.length === 0 ? (
             <p className="text-muted-foreground mt-3 rounded-lg border border-dashed p-6 text-center text-sm">
-              No exercises yet. Add one to get started.
+              Ingen øvelser endnu. Tilføj en for at komme i gang.
             </p>
           ) : (
             <div className="mt-3 rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Exercise</TableHead>
-                    <TableHead className="w-20">Sets</TableHead>
-                    <TableHead className="w-28">Target reps</TableHead>
-                    <TableHead className="w-28">Weight</TableHead>
-                    <TableHead className="w-24">Rest (s)</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead className="w-28 text-right">Actions</TableHead>
+                    <TableHead>Øvelse</TableHead>
+                    <TableHead className="w-20">Sæt</TableHead>
+                    <TableHead className="w-28">Mål-reps</TableHead>
+                    <TableHead className="w-28">Vægt</TableHead>
+                    <TableHead className="w-24">Pause (sek.)</TableHead>
+                    <TableHead>Noter</TableHead>
+                    <TableHead className="w-28 text-right">Handlinger</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -354,7 +354,7 @@ export function ProgrammeForm({
                               <FormItem>
                                 <FormControl>
                                   <Input
-                                    placeholder="Optional"
+                                    placeholder="Valgfrit"
                                     className="w-32"
                                     {...notesField}
                                     value={notesField.value ?? ""}
@@ -375,7 +375,7 @@ export function ProgrammeForm({
                               onClick={() => move(index, index - 1)}
                             >
                               <ArrowUp />
-                              <span className="sr-only">Move up</span>
+                              <span className="sr-only">Flyt op</span>
                             </Button>
                             <Button
                               type="button"
@@ -385,7 +385,7 @@ export function ProgrammeForm({
                               onClick={() => move(index, index + 1)}
                             >
                               <ArrowDown />
-                              <span className="sr-only">Move down</span>
+                              <span className="sr-only">Flyt ned</span>
                             </Button>
                             <Button
                               type="button"
@@ -394,7 +394,7 @@ export function ProgrammeForm({
                               onClick={() => remove(index)}
                             >
                               <Trash2 />
-                              <span className="sr-only">Remove</span>
+                              <span className="sr-only">Fjern</span>
                             </Button>
                           </div>
                         </TableCell>
@@ -420,14 +420,14 @@ export function ProgrammeForm({
             variant="outline"
             onClick={() => router.push("/dashboard/workouts")}
           >
-            Cancel
+            Annullér
           </Button>
           <Button type="submit" disabled={isPending}>
             {isPending
-              ? "Saving..."
+              ? "Gemmer..."
               : programmeId
-                ? "Save changes"
-                : "Create programme"}
+                ? "Gem ændringer"
+                : "Opret program"}
           </Button>
         </div>
       </form>

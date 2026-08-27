@@ -40,9 +40,9 @@ export default async function ProfilePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Profil</h1>
       <p className="text-muted-foreground mt-2">
-        Set the milestones and daily targets you&apos;re working toward.
+        Sæt de delmål og daglige mål, du arbejder hen imod.
       </p>
       <div className="mt-6">
         <ProfileForm

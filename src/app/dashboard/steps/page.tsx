@@ -17,13 +17,13 @@ import { StepsLogForm } from "./steps-log-form";
 import { StepsLogList, type StepsDayRow } from "./steps-log-list";
 
 const WEEKDAY_NAMES = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
+  "Søndag",
+  "Mandag",
+  "Tirsdag",
+  "Onsdag",
+  "Torsdag",
+  "Fredag",
+  "Lørdag",
 ];
 
 function parseMonthParam(month: string | undefined) {
@@ -63,7 +63,7 @@ export default async function StepsPage({
   const { year, monthIndex } = parseMonthParam(month);
   const prevMonth = monthParam(year, monthIndex - 1);
   const nextMonth = monthParam(year, monthIndex + 1);
-  const monthLabel = new Date(year, monthIndex, 1).toLocaleDateString(undefined, {
+  const monthLabel = new Date(year, monthIndex, 1).toLocaleDateString("da-DK", {
     month: "long",
     year: "numeric",
   });
@@ -135,27 +135,27 @@ export default async function StepsPage({
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Steps</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Skridt</h1>
           <p className="text-muted-foreground mt-2">
-            Log your daily steps and track them against your target.
+            Registrer dine daglige skridt, og følg dem op mod dit mål.
           </p>
         </div>
         <div className="flex items-center gap-3 rounded-xl bg-accent px-4 py-2.5 text-accent-foreground">
           <Footprints className="size-4.5" />
           {dailyStepsTarget ? (
             <span className="text-sm font-medium">
-              Target: <span className="font-mono tabular-nums">{dailyStepsTarget.toLocaleString()}</span> steps/day
+              Mål: <span className="font-mono tabular-nums">{dailyStepsTarget.toLocaleString("da-DK")}</span> skridt/dag
             </span>
           ) : (
-            <span className="text-sm font-medium">No steps target set</span>
+            <span className="text-sm font-medium">Intet skridtmål sat</span>
           )}
           <Button
             size="sm"
             variant="ghost"
             nativeButton={false}
-            render={<Link href="/dashboard/settings" />}
+            render={<Link href="/dashboard/profile" />}
           >
-            Edit
+            Rediger
           </Button>
         </div>
       </div>
@@ -165,22 +165,22 @@ export default async function StepsPage({
           <CardHeader className="flex items-center gap-3 space-y-0">
             <StatIcon icon={Trophy} />
             <div>
-              <CardTitle>All-time high</CardTitle>
+              <CardTitle>Højeste antal nogensinde</CardTitle>
               <CardDescription>
                 {allTimeHigh
                   ? new Date(`${allTimeHigh.date}T00:00:00`).toLocaleDateString(
-                      undefined,
+                      "da-DK",
                       { month: "short", day: "numeric", year: "numeric" }
                     )
-                  : "No entries yet"}
+                  : "Ingen registreringer endnu"}
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent>
             <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
-              {allTimeHigh ? allTimeHigh.value.toLocaleString() : "—"}{" "}
+              {allTimeHigh ? allTimeHigh.value.toLocaleString("da-DK") : "—"}{" "}
               <span className="font-sans text-lg font-normal text-muted-foreground">
-                steps
+                skridt
               </span>
             </p>
           </CardContent>
@@ -190,9 +190,9 @@ export default async function StepsPage({
           <CardHeader className="flex items-center gap-3 space-y-0">
             <StatIcon icon={CalendarDays} />
             <div>
-              <CardTitle>Best day of the week</CardTitle>
+              <CardTitle>Bedste ugedag</CardTitle>
               <CardDescription>
-                {bestWeekday ? "Average on this day" : "Not enough data yet"}
+                {bestWeekday ? "Gennemsnit på denne dag" : "Ikke nok data endnu"}
               </CardDescription>
             </div>
           </CardHeader>
@@ -202,7 +202,7 @@ export default async function StepsPage({
             </p>
             {bestWeekday && (
               <p className="font-mono text-sm text-muted-foreground tabular-nums">
-                {Math.round(bestWeekday.average).toLocaleString()} steps avg
+                {Math.round(bestWeekday.average).toLocaleString("da-DK")} skridt i snit
               </p>
             )}
           </CardContent>
@@ -211,7 +211,7 @@ export default async function StepsPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Log steps</CardTitle>
+          <CardTitle>Registrer skridt</CardTitle>
         </CardHeader>
         <CardContent>
           <StepsLogForm />
@@ -229,7 +229,7 @@ export default async function StepsPage({
               render={<Link href={`/dashboard/steps?month=${prevMonth}`} />}
             >
               <ChevronLeft className="size-4" />
-              <span className="sr-only">Previous month</span>
+              <span className="sr-only">Forrige måned</span>
             </Button>
             <Button
               size="icon-sm"
@@ -238,7 +238,7 @@ export default async function StepsPage({
               render={<Link href={`/dashboard/steps?month=${nextMonth}`} />}
             >
               <ChevronRight className="size-4" />
-              <span className="sr-only">Next month</span>
+              <span className="sr-only">Næste måned</span>
             </Button>
           </div>
         </CardHeader>

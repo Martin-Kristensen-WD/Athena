@@ -75,7 +75,7 @@ export default async function ProgrammePage(
             {programme.name}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Edit this programme or start a session from it.
+            Rediger dette program, eller start et træningspas ud fra det.
           </p>
         </div>
         <div className="flex gap-2">
@@ -87,7 +87,7 @@ export default async function ProgrammePage(
               />
             }
           >
-            <Play /> Start session
+            <Play /> Start træningspas
           </Button>
           <DeleteProgrammeDialog programmeId={programme.id} />
         </div>

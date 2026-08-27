@@ -46,9 +46,9 @@ export default function SignupPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create your Athena account</CardTitle>
+        <CardTitle>Opret din Athena-konto</CardTitle>
         <CardDescription>
-          Set your goal and start tracking in a couple of minutes.
+          Sæt dit mål, og kom i gang med at registrere på et par minutter.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -59,7 +59,7 @@ export default function SignupPage() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Name</FormLabel>
+                  <FormLabel>Navn</FormLabel>
                   <FormControl>
                     <Input autoComplete="name" {...field} />
                   </FormControl>
@@ -72,7 +72,7 @@ export default function SignupPage() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>E-mail</FormLabel>
                   <FormControl>
                     <Input type="email" autoComplete="email" {...field} />
                   </FormControl>
@@ -85,7 +85,7 @@ export default function SignupPage() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Adgangskode</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
@@ -101,14 +101,14 @@ export default function SignupPage() {
               <p className="text-destructive text-sm">{formError}</p>
             )}
             <Button type="submit" disabled={isPending} className="w-full">
-              {isPending ? "Creating account..." : "Sign up"}
+              {isPending ? "Opretter konto..." : "Opret konto"}
             </Button>
           </form>
         </Form>
         <p className="text-muted-foreground mt-4 text-center text-sm">
-          Already have an account?{" "}
+          Har du allerede en konto?{" "}
           <Link href="/login" className="text-foreground underline">
-            Log in
+            Log ind
           </Link>
         </p>
       </CardContent>

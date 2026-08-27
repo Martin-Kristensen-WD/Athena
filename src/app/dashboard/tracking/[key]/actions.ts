@@ -16,17 +16,17 @@ export async function logMetricEntry(
 ) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = logMetricEntrySchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const loggedAtDate = new Date(parsed.data.loggedAt);
   if (Number.isNaN(loggedAtDate.getTime())) {
-    return { error: "Please enter a valid date and time." };
+    return { error: "Indtast en gyldig dato og tid." };
   }
 
   const userId = session.user.id;
@@ -38,7 +38,7 @@ export async function logMetricEntry(
     .where(eq(metricDefinitions.key, metricKey));
 
   if (!definition) {
-    return { error: "Unknown metric." };
+    return { error: "Ukendt måling." };
   }
 
   const [tracked] = await db
@@ -52,7 +52,7 @@ export async function logMetricEntry(
     );
 
   if (!tracked) {
-    return { error: "You are not tracking this metric." };
+    return { error: "Du sporer ikke denne måling." };
   }
 
   await db.insert(metricEntries).values({
@@ -73,7 +73,7 @@ export async function logMetricEntry(
 export async function deleteMetricEntry(entryId: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const db = getDb();
@@ -92,7 +92,7 @@ export async function deleteMetricEntry(entryId: string) {
     .where(eq(metricEntries.id, entryId));
 
   if (!entry || entry.userId !== session.user.id) {
-    return { error: "Entry not found." };
+    return { error: "Posten blev ikke fundet." };
   }
 
   await db.delete(metricEntries).where(eq(metricEntries.id, entryId));

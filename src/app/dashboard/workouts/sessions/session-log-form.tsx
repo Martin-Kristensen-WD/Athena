@@ -79,7 +79,7 @@ export function SessionLogForm({
         setFormError(result.error);
         return;
       }
-      toast.success("Session logged");
+      toast.success("Træningspas registreret");
       router.push(`/dashboard/workouts/sessions/${result.sessionId}`);
       router.refresh();
     });
@@ -94,7 +94,7 @@ export function SessionLogForm({
             name="durationMinutes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Duration in minutes (optional)</FormLabel>
+                <FormLabel>Varighed i minutter (valgfrit)</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -111,7 +111,7 @@ export function SessionLogForm({
             name="notes"
             render={({ field }) => (
               <FormItem className="sm:col-span-2">
-                <FormLabel>Notes (optional)</FormLabel>
+                <FormLabel>Noter (valgfrit)</FormLabel>
                 <FormControl>
                   <Textarea {...field} value={field.value ?? ""} />
                 </FormControl>
@@ -126,16 +126,16 @@ export function SessionLogForm({
             <div key={exercise.id} className="rounded-lg border p-4">
               <h3 className="font-medium">{exercise.exerciseName}</h3>
               <p className="text-muted-foreground text-xs">
-                Target: {exercise.targetReps} reps
+                Mål: {exercise.targetReps} reps
                 {exercise.targetWeight ? ` @ ${exercise.targetWeight}` : ""}
               </p>
               <div className="mt-3 rounded-lg border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-16">Set</TableHead>
+                      <TableHead className="w-16">Sæt</TableHead>
                       <TableHead>Reps</TableHead>
-                      <TableHead>Weight</TableHead>
+                      <TableHead>Vægt</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -212,10 +212,10 @@ export function SessionLogForm({
             variant="outline"
             onClick={() => router.push("/dashboard/workouts")}
           >
-            Cancel
+            Annullér
           </Button>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Saving..." : "Save session"}
+            {isPending ? "Gemmer..." : "Gem træningspas"}
           </Button>
         </div>
       </form>

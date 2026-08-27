@@ -32,9 +32,9 @@ import { updateSettings } from "./actions";
 type MetricDefinition = typeof metricDefinitionsTable.$inferSelect;
 
 const GOAL_OPTIONS: { value: SettingsInput["goalType"]; label: string; description: string }[] = [
-  { value: "lose_weight", label: "Lose weight", description: "Track progress toward a lower target weight." },
-  { value: "gain_muscle", label: "Gain muscle", description: "Track strength and weight progress over time." },
-  { value: "maintain", label: "Maintain", description: "Stay steady around your current weight." },
+  { value: "lose_weight", label: "Tab dig", description: "Følg din udvikling mod en lavere målvægt." },
+  { value: "gain_muscle", label: "Byg muskler", description: "Følg din styrke og vægt over tid." },
+  { value: "maintain", label: "Vedligehold", description: "Hold din vægt stabil omkring nuværende niveau." },
 ];
 
 export function SettingsForm({
@@ -65,7 +65,7 @@ export function SettingsForm({
         setFormError(result.error);
         return;
       }
-      toast.success("Settings saved");
+      toast.success("Indstillinger gemt");
       router.refresh();
     });
   }
@@ -73,12 +73,12 @@ export function SettingsForm({
   return (
     <Card className="max-w-lg">
       <CardHeader>
-        <CardTitle>Goal &amp; tracking</CardTitle>
+        <CardTitle>Mål &amp; sporing</CardTitle>
         <CardDescription>
-          Update your goal type and which metrics you want to track. Target
-          weight and daily targets live on your{" "}
+          Opdater din måltype, og hvilke målinger du vil spore. Målvægt og
+          daglige mål findes på din{" "}
           <Link href="/dashboard/profile" className="underline underline-offset-2">
-            profile
+            profil
           </Link>
           .
         </CardDescription>
@@ -91,7 +91,7 @@ export function SettingsForm({
               name="goalType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Your goal</FormLabel>
+                  <FormLabel>Dit mål</FormLabel>
                   <FormControl>
                     <RadioGroup
                       value={field.value}
@@ -124,7 +124,7 @@ export function SettingsForm({
               name="trackedMetricKeys"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>What do you want to track?</FormLabel>
+                  <FormLabel>Hvad vil du spore?</FormLabel>
                   <div className="grid gap-3">
                     {metrics.map((metric) => {
                       const checked = field.value?.includes(metric.key);
@@ -147,7 +147,7 @@ export function SettingsForm({
                           <span>
                             <span className="block font-medium">{metric.label}</span>
                             <span className="text-muted-foreground text-sm">
-                              Unit: {metric.unit}
+                              Enhed: {metric.unit}
                             </span>
                           </span>
                         </label>
@@ -162,7 +162,7 @@ export function SettingsForm({
             {formError && <p className="text-destructive text-sm">{formError}</p>}
 
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving..." : "Save changes"}
+              {isPending ? "Gemmer..." : "Gem ændringer"}
             </Button>
           </form>
         </Form>

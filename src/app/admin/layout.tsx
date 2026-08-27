@@ -13,7 +13,7 @@ export default function AdminLayout({
           href="/dashboard"
           className="text-sm text-muted-foreground hover:text-foreground"
         >
-          Back to dashboard
+          Tilbage til dashboard
         </Link>
       </div>
       {children}

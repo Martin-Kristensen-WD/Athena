@@ -11,12 +11,12 @@ import { SessionsTab } from "./sessions-tab";
 export default function WorkoutsPage() {
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Workouts</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Træning</h1>
       <Tabs defaultValue="exercises" className="mt-6">
         <TabsList>
-          <TabsTrigger value="exercises">Exercises</TabsTrigger>
-          <TabsTrigger value="programmes">Programmes</TabsTrigger>
-          <TabsTrigger value="sessions">Sessions</TabsTrigger>
+          <TabsTrigger value="exercises">Øvelser</TabsTrigger>
+          <TabsTrigger value="programmes">Programmer</TabsTrigger>
+          <TabsTrigger value="sessions">Træningspas</TabsTrigger>
         </TabsList>
         <TabsContent value="exercises" className="mt-4">
           <ExercisesTab />

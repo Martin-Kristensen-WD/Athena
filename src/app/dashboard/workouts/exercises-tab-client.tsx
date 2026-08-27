@@ -86,7 +86,7 @@ export function ExercisesTabClient({
       ? await updateExercise(editing.id, values)
       : await createExercise(values);
     if (!result?.error) {
-      toast.success(editing ? "Exercise updated" : "Exercise created");
+      toast.success(editing ? "Øvelse opdateret" : "Øvelse oprettet");
     }
     return result;
   }
@@ -99,7 +99,7 @@ export function ExercisesTabClient({
       if (result?.error) {
         toast.error(result.error);
       } else {
-        toast.success("Exercise deleted");
+        toast.success("Øvelse slettet");
       }
       setDeleteTarget(null);
     });
@@ -119,27 +119,27 @@ export function ExercisesTabClient({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>My Exercises</CardTitle>
-            <CardDescription>Your custom exercises.</CardDescription>
+            <CardTitle>Mine øvelser</CardTitle>
+            <CardDescription>Dine egne øvelser.</CardDescription>
           </div>
           <Button size="sm" onClick={openCreate}>
-            <Plus /> Add exercise
+            <Plus /> Tilføj øvelse
           </Button>
         </CardHeader>
         <CardContent>
           {myExercises.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              You haven&apos;t added any exercises yet. Create one or clone
-              one from the catalog below.
+              Du har ikke tilføjet nogen øvelser endnu. Opret en, eller klon
+              en fra kataloget nedenfor.
             </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Muscle group</TableHead>
-                  <TableHead>Equipment</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Navn</TableHead>
+                  <TableHead>Muskelgruppe</TableHead>
+                  <TableHead>Udstyr</TableHead>
+                  <TableHead className="text-right">Handlinger</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -165,7 +165,7 @@ export function ExercisesTabClient({
                           onClick={() => openEdit(exercise)}
                         >
                           <Pencil />
-                          <span className="sr-only">Edit</span>
+                          <span className="sr-only">Rediger</span>
                         </Button>
                         <Button
                           variant="ghost"
@@ -173,7 +173,7 @@ export function ExercisesTabClient({
                           onClick={() => setDeleteTarget(exercise)}
                         >
                           <Trash2 />
-                          <span className="sr-only">Delete</span>
+                          <span className="sr-only">Slet</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -187,19 +187,19 @@ export function ExercisesTabClient({
 
       <Card>
         <CardHeader>
-          <CardTitle>Catalog</CardTitle>
+          <CardTitle>Katalog</CardTitle>
           <CardDescription>
-            System exercises. Clone one to create your own editable copy.
+            Systemøvelser. Klon en for at oprette din egen redigerbare kopi.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Muscle group</TableHead>
-                <TableHead>Equipment</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Navn</TableHead>
+                <TableHead>Muskelgruppe</TableHead>
+                <TableHead>Udstyr</TableHead>
+                <TableHead className="text-right">Handlinger</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -223,7 +223,7 @@ export function ExercisesTabClient({
                       size="sm"
                       onClick={() => openClone(exercise)}
                     >
-                      <Copy /> Clone
+                      <Copy /> Klon
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -238,18 +238,18 @@ export function ExercisesTabClient({
         onOpenChange={setFormOpen}
         title={
           editing
-            ? "Edit exercise"
+            ? "Rediger øvelse"
             : cloneDefaults
-              ? "Clone exercise"
-              : "Add exercise"
+              ? "Klon øvelse"
+              : "Tilføj øvelse"
         }
         description={
           cloneDefaults && !editing
-            ? "Save your own editable copy of this catalog exercise."
+            ? "Gem din egen redigerbare kopi af denne katalogøvelse."
             : undefined
         }
         defaultValues={dialogDefaults}
-        submitLabel={editing ? "Save changes" : "Create"}
+        submitLabel={editing ? "Gem ændringer" : "Opret"}
         onSubmit={handleSubmit}
       />
 
@@ -259,20 +259,20 @@ export function ExercisesTabClient({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete exercise?</AlertDialogTitle>
+            <AlertDialogTitle>Slet øvelse?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete &ldquo;{deleteTarget?.name}&rdquo;.
-              This can&apos;t be undone.
+              Dette vil slette &ldquo;{deleteTarget?.name}&rdquo; permanent.
+              Denne handling kan ikke fortrydes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Annullér</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={confirmDelete}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? "Sletter..." : "Slet"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

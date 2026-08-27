@@ -71,7 +71,7 @@ function TrendBadge({
 }) {
   if (trend.direction === "none") {
     return (
-      <span className="text-xs text-muted-foreground">No data last week</span>
+      <span className="text-xs text-muted-foreground">Ingen data fra sidste uge</span>
     );
   }
 
@@ -89,7 +89,7 @@ function TrendBadge({
     >
       <Icon className="size-3" />
       {trend.percent !== null ? `${Math.abs(trend.percent).toFixed(0)}%` : null}
-      <span className="font-normal opacity-70">vs last week</span>
+      <span className="font-normal opacity-70">ift. sidste uge</span>
     </span>
   );
 }
@@ -196,7 +196,7 @@ function StatCard({
           <CardIcon icon={icon} />
           <div>
             <CardTitle>{title}</CardTitle>
-            <CardDescription>Not tracked yet</CardDescription>
+            <CardDescription>Spores ikke endnu</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -206,7 +206,7 @@ function StatCard({
             nativeButton={false}
             render={<Link href="/dashboard/settings" />}
           >
-            Enable in settings
+            Aktivér i indstillinger
           </Button>
         </CardContent>
       </Card>
@@ -220,12 +220,12 @@ function StatCard({
           <CardIcon icon={icon} />
           <div>
             <CardTitle>{title}</CardTitle>
-            <CardDescription>No entries this week</CardDescription>
+            <CardDescription>Ingen registreringer denne uge</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
           <Button size="sm" nativeButton={false} render={<Link href={href} />}>
-            Log an entry
+            Registrer en post
           </Button>
         </CardContent>
       </Card>
@@ -241,12 +241,12 @@ function StatCard({
           <CardIcon icon={icon} />
           <div className="min-w-0 flex-1">
             <CardTitle>{title}</CardTitle>
-            <CardDescription>Daily average this week</CardDescription>
+            <CardDescription>Dagligt gennemsnit denne uge</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="flex items-end justify-between gap-2">
           <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
-            {currentAverage.toLocaleString(undefined, { maximumFractionDigits: 0 })}{" "}
+            {currentAverage.toLocaleString("da-DK", { maximumFractionDigits: 0 })}{" "}
             {unit && (
               <span className="font-sans text-lg font-normal text-muted-foreground">
                 {unit}
@@ -262,7 +262,7 @@ function StatCard({
 
 function formatDistance(current: number, target: number, unit: string) {
   const diff = Math.abs(current - target);
-  return `${diff.toLocaleString(undefined, { maximumFractionDigits: 1 })} ${unit}`;
+  return `${diff.toLocaleString("da-DK", { maximumFractionDigits: 1 })} ${unit}`;
 }
 
 export default async function DashboardPage() {
@@ -274,7 +274,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-2">
-          You need to be signed in to view your dashboard.
+          Du skal være logget ind for at se dit dashboard.
         </p>
       </div>
     );
@@ -341,26 +341,26 @@ export default async function DashboardPage() {
   if (currentWeight !== null && goalTarget !== null) {
     const goalDistance = formatDistance(currentWeight, goalTarget, weightUnit);
     progressText = milestoneTarget
-      ? `You're ${formatDistance(currentWeight, milestoneTarget, weightUnit)} from your milestone and ${goalDistance} from your end goal.`
-      : `You're ${goalDistance} from your end goal.`;
+      ? `Du mangler ${formatDistance(currentWeight, milestoneTarget, weightUnit)} til dit delmål og ${goalDistance} til dit slutmål.`
+      : `Du mangler ${goalDistance} til dit slutmål.`;
   }
 
-  const firstName = session.user?.name?.split(" ")[0] ?? "there";
+  const firstName = session.user?.name?.split(" ")[0];
 
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Hello, {firstName}
+        {firstName ? `Hej, ${firstName}` : "Hej!"}
       </h1>
       <p className="text-muted-foreground mt-2">
         {progressText ??
-          "Log your weight and set a goal in onboarding to track your progress here."}
+          "Registrer din vægt, og sæt et mål under opsætning for at følge din udvikling her."}
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           href="/dashboard/food"
-          title="Calorie intake"
+          title="Kalorieindtag"
           icon={Flame}
           unit="kcal"
           data={caloriesData}
@@ -377,7 +377,7 @@ export default async function DashboardPage() {
         />
         <StatCard
           href="/dashboard/steps"
-          title="Steps"
+          title="Skridt"
           icon={Footprints}
           data={stepsData}
           sentimentFor={(direction) => {
@@ -392,11 +392,11 @@ export default async function DashboardPage() {
             <CardHeader className="flex items-center gap-3 space-y-0">
               <CardIcon icon={Dumbbell} />
               <div className="min-w-0 flex-1">
-                <CardTitle>Workouts</CardTitle>
+                <CardTitle>Træning</CardTitle>
                 <CardDescription className="truncate">
                   {lastSession
-                    ? `Last session ${lastSession.startedAt.toLocaleDateString()}`
-                    : "No sessions logged yet"}
+                    ? `Seneste træning ${lastSession.startedAt.toLocaleDateString("da-DK")}`
+                    : "Ingen træning registreret endnu"}
                 </CardDescription>
               </div>
               <CardAction>
@@ -407,7 +407,7 @@ export default async function DashboardPage() {
               <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
                 {sessionsThisWeek}{" "}
                 <span className="font-sans text-lg font-normal text-muted-foreground">
-                  workout{sessionsThisWeek === 1 ? "" : "s"} this week
+                  træningspas denne uge
                 </span>
               </p>
             </CardContent>

@@ -9,16 +9,16 @@ function optionalCoercedNumber<T extends z.ZodTypeAny>(schema: T) {
 
 export const profileSchema = z.object({
   milestoneTargetValue: optionalCoercedNumber(
-    z.coerce.number().positive("Enter a valid target")
+    z.coerce.number().positive("Indtast et gyldigt mål")
   ),
   goalTargetValue: optionalCoercedNumber(
-    z.coerce.number().positive("Enter a valid target")
+    z.coerce.number().positive("Indtast et gyldigt mål")
   ),
   dailyCalorieTarget: optionalCoercedNumber(
-    z.coerce.number().positive("Enter a valid target")
+    z.coerce.number().positive("Indtast et gyldigt mål")
   ),
   dailyStepsTarget: optionalCoercedNumber(
-    z.coerce.number().positive("Enter a valid target")
+    z.coerce.number().positive("Indtast et gyldigt mål")
   ),
 });
 

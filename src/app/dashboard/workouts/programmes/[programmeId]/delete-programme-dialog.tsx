@@ -29,7 +29,7 @@ export function DeleteProgrammeDialog({ programmeId }: { programmeId: string }) 
         toast.error(result.error);
         return;
       }
-      toast.success("Programme deleted");
+      toast.success("Program slettet");
       router.push("/dashboard/workouts");
       router.refresh();
     });
@@ -38,25 +38,25 @@ export function DeleteProgrammeDialog({ programmeId }: { programmeId: string }) 
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button variant="destructive" />}>
-        <Trash2 /> Delete
+        <Trash2 /> Slet
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this programme?</AlertDialogTitle>
+          <AlertDialogTitle>Slet dette program?</AlertDialogTitle>
           <AlertDialogDescription>
-            This removes the programme and its exercise list. Past workout
-            sessions logged against it are kept, but will no longer be linked
-            to a programme. This can&apos;t be undone.
+            Dette fjerner programmet og dets øvelsesliste. Tidligere
+            træningspas registreret ud fra det bevares, men vil ikke længere
+            være knyttet til et program. Denne handling kan ikke fortrydes.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Annullér</AlertDialogCancel>
           <AlertDialogAction
             disabled={isPending}
             onClick={onConfirm}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Sletter..." : "Slet"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

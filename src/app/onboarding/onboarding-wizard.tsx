@@ -37,12 +37,12 @@ import { completeOnboarding } from "./actions";
 
 type MetricDefinition = typeof metricDefinitionsTable.$inferSelect;
 
-const STEPS = ["Weight", "Goal", "Tracking"] as const;
+const STEPS = ["Vægt", "Mål", "Sporing"] as const;
 
 const GOAL_OPTIONS: { value: OnboardingInput["goalType"]; label: string; description: string }[] = [
-  { value: "lose_weight", label: "Lose weight", description: "Track progress toward a lower target weight." },
-  { value: "gain_muscle", label: "Gain muscle", description: "Track strength and weight progress over time." },
-  { value: "maintain", label: "Maintain", description: "Stay steady around your current weight." },
+  { value: "lose_weight", label: "Tab dig", description: "Følg din udvikling mod en lavere målvægt." },
+  { value: "gain_muscle", label: "Byg muskler", description: "Følg din styrke og vægt over tid." },
+  { value: "maintain", label: "Vedligehold", description: "Hold dig stabil omkring din nuværende vægt." },
 ];
 
 export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
@@ -102,9 +102,9 @@ export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle>Welcome to Athena</CardTitle>
+        <CardTitle>Velkommen til Athena</CardTitle>
         <CardDescription>
-          Step {step + 1} of {STEPS.length}: {STEPS[step]}
+          Trin {step + 1} af {STEPS.length}: {STEPS[step]}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -117,7 +117,7 @@ export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
                   name="startingWeight"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current weight</FormLabel>
+                      <FormLabel>Nuværende vægt</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -135,7 +135,7 @@ export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
                   name="weightUnit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Unit</FormLabel>
+                      <FormLabel>Enhed</FormLabel>
                       <FormControl>
                         <RadioGroup
                           value={field.value}
@@ -164,7 +164,7 @@ export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
                   name="goalType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Your goal</FormLabel>
+                      <FormLabel>Dit mål</FormLabel>
                       <FormControl>
                         <RadioGroup
                           value={field.value}
@@ -196,7 +196,7 @@ export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
                   name="goalTargetValue"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Target weight (optional)</FormLabel>
+                      <FormLabel>Målvægt (valgfrit)</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -218,7 +218,7 @@ export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
                 name="trackedMetricKeys"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>What do you want to track?</FormLabel>
+                    <FormLabel>Hvad vil du gerne spore?</FormLabel>
                     <div className="grid gap-3">
                       {metrics.map((metric) => {
                         const checked = field.value?.includes(metric.key);
@@ -241,7 +241,7 @@ export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
                             <span>
                               <span className="block font-medium">{metric.label}</span>
                               <span className="text-muted-foreground text-sm">
-                                Unit: {metric.unit}
+                                Enhed: {metric.unit}
                               </span>
                             </span>
                           </label>
@@ -263,15 +263,15 @@ export function OnboardingWizard({ metrics }: { metrics: MetricDefinition[] }) {
                 onClick={goBack}
                 disabled={step === 0 || isPending}
               >
-                Back
+                Tilbage
               </Button>
               {step < STEPS.length - 1 ? (
                 <Button type="button" onClick={goNext}>
-                  Next
+                  Næste
                 </Button>
               ) : (
                 <Button type="submit" disabled={isPending}>
-                  {isPending ? "Finishing..." : "Finish"}
+                  {isPending ? "Afslutter..." : "Afslut"}
                 </Button>
               )}
             </div>

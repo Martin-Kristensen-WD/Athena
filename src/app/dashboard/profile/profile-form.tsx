@@ -54,7 +54,7 @@ export function ProfileForm({
         setFormError(result.error);
         return;
       }
-      toast.success("Profile saved");
+      toast.success("Profil gemt");
       router.refresh();
     });
   }
@@ -64,9 +64,9 @@ export function ProfileForm({
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid max-w-lg gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Weight goals</CardTitle>
+            <CardTitle>Vægtmål</CardTitle>
             <CardDescription>
-              Leave a field empty to clear it.
+              Lad et felt være tomt for at slette det.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
@@ -75,7 +75,7 @@ export function ProfileForm({
               name="milestoneTargetValue"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Next milestone weight ({weightUnit})</FormLabel>
+                  <FormLabel>Næste delmål for vægt ({weightUnit})</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -93,7 +93,7 @@ export function ProfileForm({
               name="goalTargetValue"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>End goal weight ({weightUnit})</FormLabel>
+                  <FormLabel>Slutmål for vægt ({weightUnit})</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -111,9 +111,9 @@ export function ProfileForm({
 
         <Card>
           <CardHeader>
-            <CardTitle>Daily targets</CardTitle>
+            <CardTitle>Daglige mål</CardTitle>
             <CardDescription>
-              Shown at the top of the Food and Steps pages.
+              Vises øverst på Kost- og Skridt-siderne.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-6">
@@ -122,7 +122,7 @@ export function ProfileForm({
               name="dailyCalorieTarget"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Daily calorie target (kcal)</FormLabel>
+                  <FormLabel>Dagligt kaloriemål (kcal)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -140,7 +140,7 @@ export function ProfileForm({
               name="dailyStepsTarget"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Daily steps target</FormLabel>
+                  <FormLabel>Dagligt skridtmål</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -159,7 +159,7 @@ export function ProfileForm({
         {formError && <p className="text-destructive text-sm">{formError}</p>}
 
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving..." : "Save changes"}
+          {isPending ? "Gemmer..." : "Gem ændringer"}
         </Button>
       </form>
     </Form>

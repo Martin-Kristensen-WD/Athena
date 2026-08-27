@@ -10,7 +10,7 @@ import {
 
 const chartConfig = {
   value: {
-    label: "Value",
+    label: "Værdi",
     color: "var(--chart-1)",
   },
 } satisfies ChartConfig;
@@ -25,7 +25,7 @@ export function MetricTrendChart({
   if (data.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        No entries yet — log one to start seeing a trend.
+        Ingen registreringer endnu — registrer en for at se udviklingen.
       </p>
     );
   }

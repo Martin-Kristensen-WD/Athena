@@ -41,7 +41,7 @@ function DeleteDayButton({ date }: { date: string }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Day removed");
+      toast.success("Dag fjernet");
       router.refresh();
     });
   }
@@ -51,27 +51,27 @@ function DeleteDayButton({ date }: { date: string }) {
       <AlertDialogTrigger
         render={
           <Button size="icon-sm" variant="ghost">
-            <span className="sr-only">Delete day</span>
+            <span className="sr-only">Slet dag</span>
             &times;
           </Button>
         }
       />
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this day&apos;s steps?</AlertDialogTitle>
+          <AlertDialogTitle>Slet denne dags skridt?</AlertDialogTitle>
           <AlertDialogDescription>
-            This removes all step entries logged for this day. This action
-            can&apos;t be undone.
+            Dette fjerner alle skridtregistreringer for denne dag. Denne
+            handling kan ikke fortrydes.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Annullér</AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
             disabled={isPending}
             onClick={handleDelete}
           >
-            {isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Sletter..." : "Slet"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -83,7 +83,7 @@ export function StepsLogList({ rows }: { rows: StepsDayRow[] }) {
   if (rows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        No steps logged for this month yet.
+        Ingen skridt registreret for denne måned endnu.
       </p>
     );
   }
@@ -92,8 +92,8 @@ export function StepsLogList({ rows }: { rows: StepsDayRow[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead>Steps</TableHead>
+          <TableHead>Dato</TableHead>
+          <TableHead>Skridt</TableHead>
           <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
@@ -101,14 +101,14 @@ export function StepsLogList({ rows }: { rows: StepsDayRow[] }) {
         {rows.map((row) => (
           <TableRow key={row.date}>
             <TableCell>
-              {new Date(`${row.date}T00:00:00`).toLocaleDateString(undefined, {
+              {new Date(`${row.date}T00:00:00`).toLocaleDateString("da-DK", {
                 weekday: "short",
                 month: "short",
                 day: "numeric",
               })}
             </TableCell>
             <TableCell className="font-mono tabular-nums">
-              {row.steps.toLocaleString()}
+              {row.steps.toLocaleString("da-DK")}
             </TableCell>
             <TableCell>
               <DeleteDayButton date={row.date} />

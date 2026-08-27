@@ -10,21 +10,21 @@ const ADMIN_EMAIL = "martin.kristensen@aller.com";
 const metricCatalog: (typeof schema.metricDefinitions.$inferInsert)[] = [
   {
     key: "weight",
-    label: "Weight",
+    label: "Vægt",
     unit: "kg",
     dataType: "number",
     icon: "scale",
   },
   {
     key: "steps",
-    label: "Steps",
-    unit: "steps",
+    label: "Skridt",
+    unit: "skridt",
     dataType: "integer",
     icon: "footprints",
   },
   {
     key: "calories",
-    label: "Calories",
+    label: "Kalorier",
     unit: "kcal",
     dataType: "integer",
     icon: "flame",
@@ -38,28 +38,28 @@ const metricCatalog: (typeof schema.metricDefinitions.$inferInsert)[] = [
   },
   {
     key: "carbs",
-    label: "Carbs",
+    label: "Kulhydrater",
     unit: "g",
     dataType: "number",
     icon: "wheat",
   },
   {
     key: "fat",
-    label: "Fat",
+    label: "Fedt",
     unit: "g",
     dataType: "number",
     icon: "droplet",
   },
   {
     key: "sleep_hours",
-    label: "Sleep",
-    unit: "hours",
+    label: "Søvn",
+    unit: "timer",
     dataType: "number",
     icon: "moon",
   },
   {
     key: "body_fat_pct",
-    label: "Body Fat",
+    label: "Fedtprocent",
     unit: "%",
     dataType: "number",
     icon: "percent",
@@ -119,7 +119,10 @@ async function main() {
     await db
       .insert(schema.metricDefinitions)
       .values(metric)
-      .onConflictDoNothing({ target: schema.metricDefinitions.key });
+      .onConflictDoUpdate({
+        target: schema.metricDefinitions.key,
+        set: { label: metric.label, unit: metric.unit },
+      });
   }
 
   console.log("Seeding exercise catalog...");

@@ -42,9 +42,9 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Indstillinger</h1>
       <p className="text-muted-foreground mt-2">
-        Manage your goal and the metrics you track.
+        Administrer dit mål, og hvilke målinger du sporer.
       </p>
       <div className="mt-6">
         <SettingsForm metrics={metrics} initialValues={initialValues} />

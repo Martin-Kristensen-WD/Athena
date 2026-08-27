@@ -7,7 +7,7 @@ import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 export async function loginAction(values: LoginInput) {
   const parsed = loginSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Invalid email or password" };
+    return { error: "Forkert e-mail eller adgangskode." };
   }
 
   try {
@@ -18,7 +18,7 @@ export async function loginAction(values: LoginInput) {
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Invalid email or password" };
+      return { error: "Forkert e-mail eller adgangskode." };
     }
     throw error;
   }

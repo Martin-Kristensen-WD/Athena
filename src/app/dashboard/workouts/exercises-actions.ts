@@ -20,12 +20,12 @@ function normalize(values: ExerciseFormInput) {
 export async function createExercise(values: ExerciseFormInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = exerciseFormSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const db = getDb();
@@ -37,7 +37,7 @@ export async function createExercise(values: ExerciseFormInput) {
     });
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { error: "You already have an exercise with this name." };
+      return { error: "Du har allerede en øvelse med dette navn." };
     }
     throw error;
   }
@@ -49,12 +49,12 @@ export async function createExercise(values: ExerciseFormInput) {
 export async function updateExercise(id: string, values: ExerciseFormInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = exerciseFormSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const db = getDb();
@@ -72,11 +72,11 @@ export async function updateExercise(id: string, values: ExerciseFormInput) {
       .returning({ id: exercises.id });
 
     if (result.length === 0) {
-      return { error: "Exercise not found." };
+      return { error: "Øvelsen blev ikke fundet." };
     }
   } catch (error) {
     if (isUniqueViolation(error)) {
-      return { error: "You already have an exercise with this name." };
+      return { error: "Du har allerede en øvelse med dette navn." };
     }
     throw error;
   }
@@ -88,7 +88,7 @@ export async function updateExercise(id: string, values: ExerciseFormInput) {
 export async function deleteExercise(id: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const db = getDb();
@@ -105,12 +105,12 @@ export async function deleteExercise(id: string) {
       .returning({ id: exercises.id });
 
     if (result.length === 0) {
-      return { error: "Exercise not found." };
+      return { error: "Øvelsen blev ikke fundet." };
     }
   } catch (error) {
     if (isForeignKeyViolation(error)) {
       return {
-        error: "This exercise is used in a programme and can't be deleted.",
+        error: "Denne øvelse bruges i et program og kan ikke slettes.",
       };
     }
     throw error;

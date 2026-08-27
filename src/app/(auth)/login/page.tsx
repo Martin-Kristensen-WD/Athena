@@ -46,9 +46,9 @@ export default function LoginPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Log in to Athena</CardTitle>
+        <CardTitle>Log ind på Athena</CardTitle>
         <CardDescription>
-          Track your weight, steps, and workouts toward your goal.
+          Følg din vægt, dine skridt og din træning på vej mod dit mål.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -59,7 +59,7 @@ export default function LoginPage() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>E-mail</FormLabel>
                   <FormControl>
                     <Input type="email" autoComplete="email" {...field} />
                   </FormControl>
@@ -72,7 +72,7 @@ export default function LoginPage() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Adgangskode</FormLabel>
                   <FormControl>
                     <Input
                       type="password"
@@ -88,14 +88,14 @@ export default function LoginPage() {
               <p className="text-destructive text-sm">{formError}</p>
             )}
             <Button type="submit" disabled={isPending} className="w-full">
-              {isPending ? "Logging in..." : "Log in"}
+              {isPending ? "Logger ind..." : "Log ind"}
             </Button>
           </form>
         </Form>
         <p className="text-muted-foreground mt-4 text-center text-sm">
-          Don&apos;t have an account?{" "}
+          Har du ikke en konto?{" "}
           <Link href="/signup" className="text-foreground underline">
-            Sign up
+            Opret konto
           </Link>
         </p>
       </CardContent>

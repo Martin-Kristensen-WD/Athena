@@ -58,7 +58,7 @@ export function FoodLogForm() {
         setFormError(result.error);
         return;
       }
-      toast.success("Food logged");
+      toast.success("Mad registreret");
       form.reset({
         date: toLocalDateInputValue(new Date()),
         kcal: undefined,
@@ -79,7 +79,7 @@ export function FoodLogForm() {
             name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date</FormLabel>
+                <FormLabel>Dato</FormLabel>
                 <FormControl>
                   <Input type="date" {...field} />
                 </FormControl>
@@ -130,7 +130,7 @@ export function FoodLogForm() {
             name="carbs"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Carbs (g)</FormLabel>
+                <FormLabel>Kulhydrater (g)</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -148,7 +148,7 @@ export function FoodLogForm() {
             name="fat"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Fat (g)</FormLabel>
+                <FormLabel>Fedt (g)</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -165,7 +165,7 @@ export function FoodLogForm() {
         {formError && <p className="text-destructive text-sm">{formError}</p>}
         <div>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Logging..." : "Log food"}
+            {isPending ? "Registrerer..." : "Registrer mad"}
           </Button>
         </div>
       </form>

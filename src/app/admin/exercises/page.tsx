@@ -21,7 +21,7 @@ export default async function AdminExercisesPage() {
   return (
     <div>
       <p className="text-muted-foreground mb-6 text-sm">
-        Manage the system exercise catalog available to every user.
+        Administrer det fælles øvelseskatalog, alle brugere har adgang til.
       </p>
       <AdminExercisesClient exercises={catalogExercises} />
     </div>

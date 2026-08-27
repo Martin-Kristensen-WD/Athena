@@ -20,17 +20,17 @@ function parseDayStart(dateStr: string) {
 export async function logFoodEntry(values: LogFoodEntryInput) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const parsed = logFoodEntrySchema.safeParse(values);
   if (!parsed.success) {
-    return { error: "Please check the form and try again." };
+    return { error: "Tjek formularen, og prøv igen." };
   }
 
   const dayStart = parseDayStart(parsed.data.date);
   if (!dayStart) {
-    return { error: "Please enter a valid date." };
+    return { error: "Indtast en gyldig dato." };
   }
   const loggedAt = new Date(dayStart.getTime() + 12 * 60 * 60 * 1000);
 
@@ -91,12 +91,12 @@ export async function logFoodEntry(values: LogFoodEntryInput) {
 export async function deleteFoodDay(dateStr: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { error: "You must be logged in." };
+    return { error: "Du skal være logget ind." };
   }
 
   const dayStart = parseDayStart(dateStr);
   if (!dayStart) {
-    return { error: "Invalid date." };
+    return { error: "Ugyldig dato." };
   }
   const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
 

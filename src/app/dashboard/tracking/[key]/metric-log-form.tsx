@@ -66,7 +66,7 @@ export function MetricLogForm({
         setFormError(result.error);
         return;
       }
-      toast.success("Entry logged");
+      toast.success("Post registreret");
       form.reset({
         value: undefined,
         loggedAt: toLocalDatetimeInputValue(new Date()),
@@ -85,7 +85,7 @@ export function MetricLogForm({
             name="value"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Value ({unit})</FormLabel>
+                <FormLabel>Værdi ({unit})</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
@@ -103,7 +103,7 @@ export function MetricLogForm({
             name="loggedAt"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date &amp; time</FormLabel>
+                <FormLabel>Dato &amp; tid</FormLabel>
                 <FormControl>
                   <Input type="datetime-local" {...field} />
                 </FormControl>
@@ -117,7 +117,7 @@ export function MetricLogForm({
           name="note"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Note (optional)</FormLabel>
+              <FormLabel>Note (valgfrit)</FormLabel>
               <FormControl>
                 <Textarea rows={2} {...field} />
               </FormControl>
@@ -128,7 +128,7 @@ export function MetricLogForm({
         {formError && <p className="text-destructive text-sm">{formError}</p>}
         <div>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Logging..." : "Log entry"}
+            {isPending ? "Registrerer..." : "Registrer post"}
           </Button>
         </div>
       </form>

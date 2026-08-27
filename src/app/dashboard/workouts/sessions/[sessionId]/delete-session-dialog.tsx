@@ -29,7 +29,7 @@ export function DeleteSessionDialog({ sessionId }: { sessionId: string }) {
         toast.error(result.error);
         return;
       }
-      toast.success("Session deleted");
+      toast.success("Træningspas slettet");
       router.push("/dashboard/workouts");
       router.refresh();
     });
@@ -38,24 +38,24 @@ export function DeleteSessionDialog({ sessionId }: { sessionId: string }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button variant="destructive" />}>
-        <Trash2 /> Delete
+        <Trash2 /> Slet
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this session?</AlertDialogTitle>
+          <AlertDialogTitle>Slet dette træningspas?</AlertDialogTitle>
           <AlertDialogDescription>
-            This permanently removes the session and all logged sets. This
-            can&apos;t be undone.
+            Dette fjerner træningspasset og alle registrerede sæt permanent.
+            Denne handling kan ikke fortrydes.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>Annullér</AlertDialogCancel>
           <AlertDialogAction
             disabled={isPending}
             onClick={onConfirm}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isPending ? "Deleting..." : "Delete"}
+            {isPending ? "Sletter..." : "Slet"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

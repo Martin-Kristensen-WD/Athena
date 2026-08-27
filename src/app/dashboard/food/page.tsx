@@ -43,7 +43,7 @@ export default async function FoodPage({
   const monthEnd = new Date(year, monthIndex + 1, 1);
   const prevMonth = monthParam(year, monthIndex - 1);
   const nextMonth = monthParam(year, monthIndex + 1);
-  const monthLabel = monthStart.toLocaleDateString(undefined, {
+  const monthLabel = monthStart.toLocaleDateString("da-DK", {
     month: "long",
     year: "numeric",
   });
@@ -108,34 +108,34 @@ export default async function FoodPage({
     <div className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Food</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Kost</h1>
           <p className="text-muted-foreground mt-2">
-            Log what you eat and track it against your daily target.
+            Registrer det, du spiser, og følg det op mod dit daglige mål.
           </p>
         </div>
         <div className="flex items-center gap-3 rounded-xl bg-accent px-4 py-2.5 text-accent-foreground">
           <Flame className="size-4.5" />
           {dailyCalorieTarget ? (
             <span className="text-sm font-medium">
-              Target: <span className="font-mono tabular-nums">{dailyCalorieTarget.toLocaleString()}</span> kcal/day
+              Mål: <span className="font-mono tabular-nums">{dailyCalorieTarget.toLocaleString("da-DK")}</span> kcal/dag
             </span>
           ) : (
-            <span className="text-sm font-medium">No calorie target set</span>
+            <span className="text-sm font-medium">Intet kaloriemål sat</span>
           )}
           <Button
             size="sm"
             variant="ghost"
             nativeButton={false}
-            render={<Link href="/dashboard/settings" />}
+            render={<Link href="/dashboard/profile" />}
           >
-            Edit
+            Rediger
           </Button>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Log food</CardTitle>
+          <CardTitle>Registrer mad</CardTitle>
         </CardHeader>
         <CardContent>
           <FoodLogForm />
@@ -153,7 +153,7 @@ export default async function FoodPage({
               render={<Link href={`/dashboard/food?month=${prevMonth}`} />}
             >
               <ChevronLeft className="size-4" />
-              <span className="sr-only">Previous month</span>
+              <span className="sr-only">Forrige måned</span>
             </Button>
             <Button
               size="icon-sm"
@@ -162,7 +162,7 @@ export default async function FoodPage({
               render={<Link href={`/dashboard/food?month=${nextMonth}`} />}
             >
               <ChevronRight className="size-4" />
-              <span className="sr-only">Next month</span>
+              <span className="sr-only">Næste måned</span>
             </Button>
           </div>
         </CardHeader>

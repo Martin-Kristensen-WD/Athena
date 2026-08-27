@@ -24,9 +24,9 @@ export default async function NewProgrammePage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="text-2xl font-semibold tracking-tight">New programme</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Nyt program</h1>
       <p className="text-muted-foreground mt-1">
-        Build a reusable workout plan you can start sessions from.
+        Byg en genanvendelig træningsplan, du kan starte træningspas ud fra.
       </p>
       <div className="mt-6">
         <ProgrammeForm exercises={availableExercises} />

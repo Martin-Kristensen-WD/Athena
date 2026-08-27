@@ -8,11 +8,11 @@ function optionalCoercedNumber<T extends z.ZodTypeAny>(schema: T) {
 }
 
 export const logFoodEntrySchema = z.object({
-  date: z.string().min(1, "Pick a date"),
-  kcal: z.coerce.number().positive("Enter a positive number"),
-  protein: optionalCoercedNumber(z.coerce.number().min(0, "Must be zero or more")),
-  carbs: optionalCoercedNumber(z.coerce.number().min(0, "Must be zero or more")),
-  fat: optionalCoercedNumber(z.coerce.number().min(0, "Must be zero or more")),
+  date: z.string().min(1, "Vælg en dato"),
+  kcal: z.coerce.number().positive("Indtast et positivt tal"),
+  protein: optionalCoercedNumber(z.coerce.number().min(0, "Skal være nul eller mere")),
+  carbs: optionalCoercedNumber(z.coerce.number().min(0, "Skal være nul eller mere")),
+  fat: optionalCoercedNumber(z.coerce.number().min(0, "Skal være nul eller mere")),
 });
 
 export type LogFoodEntryInput = z.infer<typeof logFoodEntrySchema>;

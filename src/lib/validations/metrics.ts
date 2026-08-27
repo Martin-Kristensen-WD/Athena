@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export const logMetricEntrySchema = z.object({
-  value: z.coerce.number().positive("Enter a positive number"),
-  loggedAt: z.string().min(1, "Pick a date and time"),
+  value: z.coerce.number().positive("Indtast et positivt tal"),
+  loggedAt: z.string().min(1, "Vælg en dato og et tidspunkt"),
   note: z
     .string()
-    .max(500, "Keep notes under 500 characters")
+    .max(500, "Noter må højst være 500 tegn")
     .optional()
     .or(z.literal("")),
 });

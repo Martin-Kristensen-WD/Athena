@@ -10,8 +10,8 @@ function optionalCoercedNumber<T extends z.ZodTypeAny>(schema: T) {
 }
 
 export const sessionSetLogSchema = z.object({
-  reps: optionalCoercedNumber(z.coerce.number().int().nonnegative("Enter valid reps")),
-  weight: optionalCoercedNumber(z.coerce.number().nonnegative("Enter a valid weight")),
+  reps: optionalCoercedNumber(z.coerce.number().int().nonnegative("Indtast gyldige reps")),
+  weight: optionalCoercedNumber(z.coerce.number().nonnegative("Indtast en gyldig vægt")),
 });
 
 export const sessionExerciseLogSchema = z.object({
@@ -21,14 +21,14 @@ export const sessionExerciseLogSchema = z.object({
 });
 
 export const workoutSessionSchema = z.object({
-  programmeId: z.string().uuid("Pick a programme"),
+  programmeId: z.string().uuid("Vælg et program"),
   durationMinutes: optionalCoercedNumber(
-    z.coerce.number().int().positive("Enter a valid duration")
+    z.coerce.number().int().positive("Indtast en gyldig varighed")
   ),
   notes: z.string().optional(),
   exercises: z
     .array(sessionExerciseLogSchema)
-    .min(1, "This programme has no exercises to log"),
+    .min(1, "Dette program har ingen øvelser at registrere"),
 });
 
 export type SessionSetLogInput = z.infer<typeof sessionSetLogSchema>;

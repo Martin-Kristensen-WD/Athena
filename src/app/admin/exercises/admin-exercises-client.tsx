@@ -73,7 +73,7 @@ export function AdminExercisesClient({
       ? await updateSystemExercise(editing.id, values)
       : await createSystemExercise(values);
     if (!result?.error) {
-      toast.success(editing ? "Exercise updated" : "Exercise created");
+      toast.success(editing ? "Øvelse opdateret" : "Øvelse oprettet");
     }
     return result;
   }
@@ -86,7 +86,7 @@ export function AdminExercisesClient({
       if (result?.error) {
         toast.error(result.error);
       } else {
-        toast.success("Exercise deleted");
+        toast.success("Øvelse slettet");
       }
       setDeleteTarget(null);
     });
@@ -105,28 +105,28 @@ export function AdminExercisesClient({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Exercise catalog</CardTitle>
+          <CardTitle>Øvelseskatalog</CardTitle>
           <CardDescription>
-            System exercises shown to every user.
+            Fælles øvelser, som vises til alle brugere.
           </CardDescription>
         </div>
         <Button size="sm" onClick={openCreate}>
-          <Plus /> Add exercise
+          <Plus /> Tilføj øvelse
         </Button>
       </CardHeader>
       <CardContent>
         {catalogExercises.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No catalog exercises yet.
+            Ingen øvelser i kataloget endnu.
           </p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Muscle group</TableHead>
-                <TableHead>Equipment</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Navn</TableHead>
+                <TableHead>Muskelgruppe</TableHead>
+                <TableHead>Udstyr</TableHead>
+                <TableHead className="text-right">Handlinger</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -152,7 +152,7 @@ export function AdminExercisesClient({
                         onClick={() => openEdit(exercise)}
                       >
                         <Pencil />
-                        <span className="sr-only">Edit</span>
+                        <span className="sr-only">Rediger</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -160,7 +160,7 @@ export function AdminExercisesClient({
                         onClick={() => setDeleteTarget(exercise)}
                       >
                         <Trash2 />
-                        <span className="sr-only">Delete</span>
+                        <span className="sr-only">Slet</span>
                       </Button>
                     </div>
                   </TableCell>
@@ -174,9 +174,9 @@ export function AdminExercisesClient({
       <ExerciseFormDialog
         open={formOpen}
         onOpenChange={setFormOpen}
-        title={editing ? "Edit catalog exercise" : "Add catalog exercise"}
+        title={editing ? "Rediger katalogøvelse" : "Tilføj katalogøvelse"}
         defaultValues={dialogDefaults}
-        submitLabel={editing ? "Save changes" : "Create"}
+        submitLabel={editing ? "Gem ændringer" : "Opret"}
         onSubmit={handleSubmit}
       />
 
@@ -186,20 +186,20 @@ export function AdminExercisesClient({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete catalog exercise?</AlertDialogTitle>
+            <AlertDialogTitle>Slet katalogøvelse?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete &ldquo;{deleteTarget?.name}&rdquo;
-              from the catalog for all users. This can&apos;t be undone.
+              Dette sletter permanent &ldquo;{deleteTarget?.name}&rdquo; fra
+              kataloget for alle brugere. Handlingen kan ikke fortrydes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Annullér</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               onClick={confirmDelete}
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? "Sletter..." : "Slet"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
