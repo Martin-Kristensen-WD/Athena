@@ -45,6 +45,10 @@ export default async function SettingsPage() {
       profile?.dailyCalorieTarget !== null && profile?.dailyCalorieTarget !== undefined
         ? Number(profile.dailyCalorieTarget)
         : undefined,
+    dailyStepsTarget:
+      profile?.dailyStepsTarget !== null && profile?.dailyStepsTarget !== undefined
+        ? Number(profile.dailyStepsTarget)
+        : undefined,
     trackedMetricKeys: trackedKeys,
   };
 

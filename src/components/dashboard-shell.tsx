@@ -9,6 +9,7 @@ import {
   LineChart,
   Dumbbell,
   Flame,
+  Footprints,
   LogOut,
   Settings,
   ShieldCheck,
@@ -40,6 +41,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/food", label: "Food", icon: Flame },
+  { href: "/dashboard/steps", label: "Steps", icon: Footprints },
   { href: "/dashboard/tracking", label: "Tracking", icon: LineChart },
   { href: "/dashboard/workouts", label: "Workouts", icon: Dumbbell },
 ];

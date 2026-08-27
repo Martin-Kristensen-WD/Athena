@@ -376,7 +376,7 @@ export default async function DashboardPage() {
           }}
         />
         <StatCard
-          href="/dashboard/tracking/steps"
+          href="/dashboard/steps"
           title="Steps"
           icon={Footprints}
           data={stepsData}

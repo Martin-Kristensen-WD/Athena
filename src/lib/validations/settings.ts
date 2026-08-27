@@ -17,6 +17,9 @@ export const settingsSchema = z.object({
   dailyCalorieTarget: optionalCoercedNumber(
     z.coerce.number().positive("Enter a valid target")
   ),
+  dailyStepsTarget: optionalCoercedNumber(
+    z.coerce.number().positive("Enter a valid target")
+  ),
   trackedMetricKeys: z
     .array(z.string())
     .min(1, "Pick at least one metric to track"),
