@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { and, desc, eq, gte } from "drizzle-orm";
+import { Scale, Footprints, Dumbbell, type LucideIcon } from "lucide-react";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import {
@@ -17,6 +18,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+function CardIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+      <Icon className="size-4.5" />
+    </span>
+  );
+}
 
 function daysAgo(days: number) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -87,9 +96,11 @@ async function getLatestMetricCardData(
 
 function MetricCard({
   title,
+  icon,
   data,
 }: {
   title: string;
+  icon: LucideIcon;
   data: MetricCardData;
 }) {
   const { definition, isTracked, latestEntry } = data;
@@ -97,9 +108,12 @@ function MetricCard({
   if (!definition || !isTracked) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>Not tracked yet</CardDescription>
+        <CardHeader className="flex items-center gap-3 space-y-0">
+          <CardIcon icon={icon} />
+          <div>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>Not tracked yet</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <Button
@@ -118,9 +132,12 @@ function MetricCard({
   if (!latestEntry) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>No entries yet</CardDescription>
+        <CardHeader className="flex items-center gap-3 space-y-0">
+          <CardIcon icon={icon} />
+          <div>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>No entries yet</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <Button
@@ -137,11 +154,14 @@ function MetricCard({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
-          Last logged {latestEntry.loggedAt.toLocaleDateString()}
-        </CardDescription>
+      <CardHeader className="flex items-center gap-3 space-y-0">
+        <CardIcon icon={icon} />
+        <div className="min-w-0 flex-1">
+          <CardTitle>{title}</CardTitle>
+          <CardDescription className="truncate">
+            Last logged {latestEntry.loggedAt.toLocaleDateString()}
+          </CardDescription>
+        </div>
         <CardAction>
           <Button
             size="sm"
@@ -154,9 +174,9 @@ function MetricCard({
         </CardAction>
       </CardHeader>
       <CardContent>
-        <p className="text-3xl font-semibold tracking-tight">
+        <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
           {Number(latestEntry.value).toLocaleString()}{" "}
-          <span className="text-lg font-normal text-muted-foreground">
+          <span className="font-sans text-lg font-normal text-muted-foreground">
             {definition.unit}
           </span>
         </p>
@@ -208,23 +228,28 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        Dashboard
+      </h1>
       <p className="text-muted-foreground mt-2">
         Your weight, steps, and workout summary at a glance.
       </p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MetricCard title="Weight" data={weightData} />
-        <MetricCard title="Steps" data={stepsData} />
+        <MetricCard title="Weight" icon={Scale} data={weightData} />
+        <MetricCard title="Steps" icon={Footprints} data={stepsData} />
 
         <Card>
-          <CardHeader>
-            <CardTitle>Workouts</CardTitle>
-            <CardDescription>
-              {lastSession
-                ? `Last session ${lastSession.startedAt.toLocaleDateString()}`
-                : "No sessions logged yet"}
-            </CardDescription>
+          <CardHeader className="flex items-center gap-3 space-y-0">
+            <CardIcon icon={Dumbbell} />
+            <div className="min-w-0 flex-1">
+              <CardTitle>Workouts</CardTitle>
+              <CardDescription className="truncate">
+                {lastSession
+                  ? `Last session ${lastSession.startedAt.toLocaleDateString()}`
+                  : "No sessions logged yet"}
+              </CardDescription>
+            </div>
             <CardAction>
               <Button
                 size="sm"
@@ -238,9 +263,9 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {lastSession ? (
-              <p className="text-3xl font-semibold tracking-tight">
+              <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
                 {sessionsThisWeek}{" "}
-                <span className="text-lg font-normal text-muted-foreground">
+                <span className="font-sans text-lg font-normal text-muted-foreground">
                   session{sessionsThisWeek === 1 ? "" : "s"} this week
                 </span>
               </p>

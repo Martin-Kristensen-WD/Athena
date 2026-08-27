@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { LayoutDashboard, LineChart, Dumbbell, LogOut, Settings, ShieldCheck } from "lucide-react";
+import {
+  Activity,
+  LayoutDashboard,
+  LineChart,
+  Dumbbell,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  ChevronsUpDown,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Sidebar,
   SidebarContent,
@@ -55,14 +65,25 @@ function UserMenu({ user }: { user: DashboardUser }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <button className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-            <Avatar className="size-8">
-              <AvatarFallback>{initials(user.name, user.email)}</AvatarFallback>
+          <button className="flex w-full items-center gap-2.5 rounded-xl p-2 text-left outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/50">
+            <Avatar className="size-8 shrink-0 ring-1 ring-border">
+              <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">
+                {initials(user.name, user.email)}
+              </AvatarFallback>
             </Avatar>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm font-medium text-sidebar-foreground">
+                {user.name ?? "Account"}
+              </span>
+              <span className="truncate text-xs text-muted-foreground">
+                {user.email}
+              </span>
+            </span>
+            <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
           </button>
         }
       />
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" side="top" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col">
             <span className="font-medium">{user.name ?? "Account"}</span>
@@ -70,9 +91,7 @@ function UserMenu({ user }: { user: DashboardUser }) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => router.push("/dashboard/settings")}
-        >
+        <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
           <Settings /> Settings
         </DropdownMenuItem>
         {user.role === "admin" && (
@@ -100,24 +119,44 @@ export function DashboardShell({
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <span className="px-2 py-1 text-lg font-semibold tracking-tight">Athena</span>
+      <Sidebar variant="floating">
+        <SidebarHeader className="px-3 pt-3 pb-1">
+          <Link href="/dashboard" className="flex items-center gap-2 px-1 py-1">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Activity className="size-4.5" />
+            </span>
+            <span className="text-lg font-semibold tracking-tight text-sidebar-foreground">
+              Athena
+            </span>
+          </Link>
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
+        <SidebarContent className="px-2 pt-2">
+          <SidebarMenu className="gap-1">
             {NAV_ITEMS.map((item) => {
               const isActive =
                 item.href === "/dashboard"
                   ? pathname === "/dashboard"
                   : pathname.startsWith(item.href);
               return (
-                <SidebarMenuItem key={item.href}>
+                <SidebarMenuItem key={item.href} className="relative">
+                  {isActive && (
+                    <span className="animate-pulse-soft absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-primary" />
+                  )}
                   <SidebarMenuButton
                     isActive={isActive}
                     render={<Link href={item.href} />}
+                    className="h-11 gap-3 pl-4 text-sm"
                   >
-                    <item.icon />
+                    <span
+                      className={cn(
+                        "flex size-7 shrink-0 items-center justify-center rounded-lg transition-colors",
+                        isActive
+                          ? "bg-primary/15 text-primary"
+                          : "text-muted-foreground group-hover/menu-button:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      <item.icon className="size-4" />
+                    </span>
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -125,14 +164,20 @@ export function DashboardShell({
             })}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter />
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex items-center justify-between border-b px-4 py-3">
-          <SidebarTrigger />
+        <SidebarFooter className="p-2">
           <UserMenu user={user} />
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset className="m-2 md:ml-0 rounded-2xl bg-card shadow-[0_1px_2px_rgba(22,35,28,0.04)] ring-1 ring-border">
+        <header className="flex items-center border-b border-border px-4 py-2.5 md:hidden">
+          <SidebarTrigger />
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <div
+          key={pathname}
+          className="animate-in fade-in slide-in-from-bottom-2 flex-1 overflow-y-auto p-6 duration-500 md:p-8"
+        >
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
