@@ -15,62 +15,50 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  logMetricEntrySchema,
-  type LogMetricEntryInput,
-} from "@/lib/validations/metrics";
-import { logMetricEntry } from "./actions";
+import { logSleepEntrySchema, type LogSleepEntryInput } from "@/lib/validations/sleep";
+import { logSleepEntry } from "./actions";
 
-function toLocalDatetimeInputValue(date: Date) {
+function toLocalDateInputValue(date: Date) {
   const offset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - offset * 60000);
-  return local.toISOString().slice(0, 16);
+  return local.toISOString().slice(0, 10);
 }
 
-export function MetricLogForm({
-  metricKey,
-  unit,
-}: {
-  metricKey: string;
-  unit: string;
-}) {
+export function SleepLogForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
 
   const form = useForm<
-    z.input<typeof logMetricEntrySchema>,
+    z.input<typeof logSleepEntrySchema>,
     unknown,
-    z.output<typeof logMetricEntrySchema>
+    z.output<typeof logSleepEntrySchema>
   >({
-    resolver: zodResolver(logMetricEntrySchema),
+    resolver: zodResolver(logSleepEntrySchema),
     defaultValues: {
-      value: undefined,
-      loggedAt: "",
-      note: "",
+      date: "",
+      hours: undefined,
     },
   });
 
   useEffect(() => {
-    form.setValue("loggedAt", toLocalDatetimeInputValue(new Date()));
+    form.setValue("date", toLocalDateInputValue(new Date()));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function onSubmit(values: LogMetricEntryInput) {
+  function onSubmit(values: LogSleepEntryInput) {
     setFormError(null);
     startTransition(async () => {
-      const result = await logMetricEntry(metricKey, values);
+      const result = await logSleepEntry(values);
       if (result?.error) {
         setFormError(result.error);
         return;
       }
-      toast.success("Post registreret");
+      toast.success("Søvn registreret");
       form.reset({
-        value: undefined,
-        loggedAt: toLocalDatetimeInputValue(new Date()),
-        note: "",
+        date: toLocalDateInputValue(new Date()),
+        hours: undefined,
       });
       router.refresh();
     });
@@ -82,14 +70,27 @@ export function MetricLogForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="value"
+            name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Værdi ({unit})</FormLabel>
+                <FormLabel>Dato</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="hours"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Timer</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    step="any"
+                    step="0.1"
                     {...field}
                     value={(field.value as string | number | undefined) ?? ""}
                   />
@@ -98,37 +99,11 @@ export function MetricLogForm({
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="loggedAt"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Dato &amp; tid</FormLabel>
-                <FormControl>
-                  <Input type="datetime-local" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
-        <FormField
-          control={form.control}
-          name="note"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Note (valgfrit)</FormLabel>
-              <FormControl>
-                <Textarea rows={2} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         {formError && <p className="text-destructive text-sm">{formError}</p>}
         <div>
           <Button type="submit" disabled={isPending}>
-            {isPending ? "Registrerer..." : "Registrer post"}
+            {isPending ? "Registrerer..." : "Registrer søvn"}
           </Button>
         </div>
       </form>

@@ -23,27 +23,25 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { deleteMetricEntry } from "./actions";
+import { deleteWeightDay } from "./actions";
 
-export type MetricEntryRow = {
-  id: string;
-  value: string;
-  loggedAt: string;
-  note: string | null;
+export type WeightDayRow = {
+  date: string;
+  weight: number;
 };
 
-function DeleteEntryButton({ entryId }: { entryId: string }) {
+function DeleteDayButton({ date }: { date: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await deleteMetricEntry(entryId);
+      const result = await deleteWeightDay(date);
       if (result?.error) {
         toast.error(result.error);
         return;
       }
-      toast.success("Post slettet");
+      toast.success("Dag fjernet");
       router.refresh();
     });
   }
@@ -53,17 +51,17 @@ function DeleteEntryButton({ entryId }: { entryId: string }) {
       <AlertDialogTrigger
         render={
           <Button size="icon-sm" variant="ghost">
-            <span className="sr-only">Slet post</span>
+            <span className="sr-only">Slet dag</span>
             &times;
           </Button>
         }
       />
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Slet denne post?</AlertDialogTitle>
+          <AlertDialogTitle>Slet denne dags registrering?</AlertDialogTitle>
           <AlertDialogDescription>
-            Dette fjerner posten permanent. Denne handling kan ikke
-            fortrydes.
+            Dette fjerner vægtregistreringen for denne dag. Denne handling
+            kan ikke fortrydes.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -81,17 +79,17 @@ function DeleteEntryButton({ entryId }: { entryId: string }) {
   );
 }
 
-export function MetricHistoryTable({
-  entries,
-  unit,
+export function WeightLogList({
+  rows,
+  weightUnit,
 }: {
-  entries: MetricEntryRow[];
-  unit: string;
+  rows: WeightDayRow[];
+  weightUnit: string;
 }) {
-  if (entries.length === 0) {
+  if (rows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
-        Ingen registreringer endnu.
+        Ingen vægt registreret for denne måned endnu.
       </p>
     );
   }
@@ -101,25 +99,25 @@ export function MetricHistoryTable({
       <TableHeader>
         <TableRow>
           <TableHead>Dato</TableHead>
-          <TableHead>Værdi</TableHead>
-          <TableHead>Note</TableHead>
+          <TableHead>Vægt</TableHead>
           <TableHead className="w-10" />
         </TableRow>
       </TableHeader>
       <TableBody>
-        {entries.map((entry) => (
-          <TableRow key={entry.id}>
+        {rows.map((row) => (
+          <TableRow key={row.date}>
             <TableCell>
-              {new Date(entry.loggedAt).toLocaleString("da-DK")}
+              {new Date(`${row.date}T00:00:00`).toLocaleDateString("da-DK", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
+            </TableCell>
+            <TableCell className="font-mono tabular-nums">
+              {row.weight.toLocaleString("da-DK")} {weightUnit}
             </TableCell>
             <TableCell>
-              {Number(entry.value).toLocaleString("da-DK")} {unit}
-            </TableCell>
-            <TableCell className="max-w-64 truncate whitespace-normal text-muted-foreground">
-              {entry.note ?? ""}
-            </TableCell>
-            <TableCell>
-              <DeleteEntryButton entryId={entry.id} />
+              <DeleteDayButton date={row.date} />
             </TableCell>
           </TableRow>
         ))}

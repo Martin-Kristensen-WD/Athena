@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { and, desc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
 import {
   Flame,
   Footprints,
+  Scale,
+  Moon,
   Dumbbell,
   ArrowUp,
   ArrowDown,
@@ -106,7 +108,8 @@ async function getWeeklyAverage(
   userId: string,
   metricDefinitionId: string,
   windowStart: Date,
-  windowEnd: Date
+  windowEnd: Date,
+  aggregation: "sum" | "last" = "sum"
 ): Promise<number | null> {
   const entries = await db
     .select({ value: metricEntries.value, loggedAt: metricEntries.loggedAt })
@@ -118,26 +121,35 @@ async function getWeeklyAverage(
         gte(metricEntries.loggedAt, windowStart),
         lt(metricEntries.loggedAt, windowEnd)
       )
-    );
+    )
+    .orderBy(asc(metricEntries.loggedAt));
 
   if (entries.length === 0) {
     return null;
   }
 
-  const dailyTotals = new Map<string, number>();
+  const dailyValues = new Map<string, number>();
   for (const entry of entries) {
     const dayKey = entry.loggedAt.toISOString().slice(0, 10);
-    dailyTotals.set(dayKey, (dailyTotals.get(dayKey) ?? 0) + Number(entry.value));
+    const value = Number(entry.value);
+    if (aggregation === "sum") {
+      dailyValues.set(dayKey, (dailyValues.get(dayKey) ?? 0) + value);
+    } else {
+      // "last": entries are ordered ascending, so later entries overwrite
+      // earlier ones within the same day, leaving the day's latest reading.
+      dailyValues.set(dayKey, value);
+    }
   }
 
-  const totals = [...dailyTotals.values()];
-  return totals.reduce((sum, value) => sum + value, 0) / totals.length;
+  const values = [...dailyValues.values()];
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 async function getWeeklyStatData(
   db: ReturnType<typeof getDb>,
   userId: string,
-  key: string
+  key: string,
+  aggregation: "sum" | "last" = "sum"
 ): Promise<WeeklyStatData> {
   const [definition] = await db
     .select({
@@ -165,8 +177,8 @@ async function getWeeklyStatData(
     );
 
   const [currentAverage, previousAverage] = await Promise.all([
-    getWeeklyAverage(db, userId, definition.id, daysAgo(7), new Date()),
-    getWeeklyAverage(db, userId, definition.id, daysAgo(14), daysAgo(7)),
+    getWeeklyAverage(db, userId, definition.id, daysAgo(7), new Date(), aggregation),
+    getWeeklyAverage(db, userId, definition.id, daysAgo(14), daysAgo(7), aggregation),
   ]);
 
   return { definition, isTracked: Boolean(tracked), currentAverage, previousAverage };
@@ -185,7 +197,7 @@ function StatCard({
   icon: LucideIcon;
   unit?: string;
   data: WeeklyStatData;
-  sentimentFor: (direction: Direction) => Sentiment;
+  sentimentFor?: (direction: Direction) => Sentiment;
 }) {
   const { definition, isTracked, currentAverage, previousAverage } = data;
 
@@ -253,7 +265,9 @@ function StatCard({
               </span>
             )}
           </p>
-          <TrendBadge trend={trend} sentiment={sentimentFor(trend.direction)} />
+          {sentimentFor && (
+            <TrendBadge trend={trend} sentiment={sentimentFor(trend.direction)} />
+          )}
         </CardContent>
       </Card>
     </Link>
@@ -282,47 +296,57 @@ export default async function DashboardPage() {
 
   const db = getDb();
 
-  const [caloriesData, stepsData, latestWeight, profile, recentSessions, weekSessions] =
-    await Promise.all([
-      getWeeklyStatData(db, userId, "calories"),
-      getWeeklyStatData(db, userId, "steps"),
-      db
-        .select({ value: metricEntries.value })
-        .from(metricEntries)
-        .innerJoin(
-          metricDefinitions,
-          eq(metricEntries.metricDefinitionId, metricDefinitions.id)
+  const [
+    caloriesData,
+    stepsData,
+    weightData,
+    sleepData,
+    latestWeight,
+    profile,
+    recentSessions,
+    weekSessions,
+  ] = await Promise.all([
+    getWeeklyStatData(db, userId, "calories"),
+    getWeeklyStatData(db, userId, "steps"),
+    getWeeklyStatData(db, userId, "weight", "last"),
+    getWeeklyStatData(db, userId, "sleep_hours"),
+    db
+      .select({ value: metricEntries.value })
+      .from(metricEntries)
+      .innerJoin(
+        metricDefinitions,
+        eq(metricEntries.metricDefinitionId, metricDefinitions.id)
+      )
+      .where(
+        and(eq(metricEntries.userId, userId), eq(metricDefinitions.key, "weight"))
+      )
+      .orderBy(desc(metricEntries.loggedAt))
+      .limit(1),
+    db
+      .select({
+        weightUnit: profiles.weightUnit,
+        goalType: profiles.goalType,
+        goalTargetValue: profiles.goalTargetValue,
+        milestoneTargetValue: profiles.milestoneTargetValue,
+      })
+      .from(profiles)
+      .where(eq(profiles.userId, userId)),
+    db
+      .select({ startedAt: workoutSessions.startedAt })
+      .from(workoutSessions)
+      .where(eq(workoutSessions.userId, userId))
+      .orderBy(desc(workoutSessions.startedAt))
+      .limit(1),
+    db
+      .select({ id: workoutSessions.id })
+      .from(workoutSessions)
+      .where(
+        and(
+          eq(workoutSessions.userId, userId),
+          gte(workoutSessions.startedAt, daysAgo(7))
         )
-        .where(
-          and(eq(metricEntries.userId, userId), eq(metricDefinitions.key, "weight"))
-        )
-        .orderBy(desc(metricEntries.loggedAt))
-        .limit(1),
-      db
-        .select({
-          weightUnit: profiles.weightUnit,
-          goalType: profiles.goalType,
-          goalTargetValue: profiles.goalTargetValue,
-          milestoneTargetValue: profiles.milestoneTargetValue,
-        })
-        .from(profiles)
-        .where(eq(profiles.userId, userId)),
-      db
-        .select({ startedAt: workoutSessions.startedAt })
-        .from(workoutSessions)
-        .where(eq(workoutSessions.userId, userId))
-        .orderBy(desc(workoutSessions.startedAt))
-        .limit(1),
-      db
-        .select({ id: workoutSessions.id })
-        .from(workoutSessions)
-        .where(
-          and(
-            eq(workoutSessions.userId, userId),
-            gte(workoutSessions.startedAt, daysAgo(7))
-          )
-        ),
-    ]);
+      ),
+  ]);
 
   const lastSession = recentSessions[0] ?? null;
   const sessionsThisWeek = weekSessions.length;
@@ -385,6 +409,30 @@ export default async function DashboardPage() {
             if (direction === "down") return "bad";
             return "neutral";
           }}
+        />
+        <StatCard
+          href="/dashboard/weight"
+          title="Vægt"
+          icon={Scale}
+          unit={weightUnit}
+          data={weightData}
+          sentimentFor={(direction) => {
+            if (direction === "flat" || direction === "none") return "neutral";
+            if (userProfile?.goalType === "gain_muscle") {
+              return direction === "up" ? "good" : "bad";
+            }
+            if (userProfile?.goalType === "lose_weight") {
+              return direction === "down" ? "good" : "bad";
+            }
+            return "neutral";
+          }}
+        />
+        <StatCard
+          href="/dashboard/sleep"
+          title="Søvn"
+          icon={Moon}
+          unit="timer"
+          data={sleepData}
         />
 
         <Link href="/dashboard/workouts" className="group block">

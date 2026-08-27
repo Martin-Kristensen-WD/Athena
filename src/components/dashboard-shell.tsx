@@ -6,7 +6,8 @@ import { signOut } from "next-auth/react";
 import {
   Activity,
   LayoutDashboard,
-  LineChart,
+  Scale,
+  Moon,
   Dumbbell,
   Flame,
   Footprints,
@@ -43,7 +44,8 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/food", label: "Kost", icon: Flame },
   { href: "/dashboard/steps", label: "Skridt", icon: Footprints },
-  { href: "/dashboard/tracking", label: "Sporing", icon: LineChart },
+  { href: "/dashboard/weight", label: "Vægt", icon: Scale },
+  { href: "/dashboard/sleep", label: "Søvn", icon: Moon },
   { href: "/dashboard/workouts", label: "Træning", icon: Dumbbell },
 ];
 
