@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DashboardViewToggle } from "@/components/dashboard-view-toggle";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import {
@@ -353,13 +354,18 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        {firstName ? `Hej, ${firstName}` : "Hej!"}
-      </h1>
-      <p className="text-muted-foreground mt-2">
-        {progressText ??
-          "Registrer din vægt, og sæt et mål under opsætning for at følge din udvikling her."}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            {firstName ? `Hej, ${firstName}` : "Hej!"}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {progressText ??
+              "Registrer din vægt, og sæt et mål under opsætning for at følge din udvikling her."}
+          </p>
+        </div>
+        <DashboardViewToggle active="main" />
+      </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard

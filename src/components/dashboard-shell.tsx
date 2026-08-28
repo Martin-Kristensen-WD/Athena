@@ -12,6 +12,7 @@ import {
   Flame,
   Footprints,
   LogOut,
+  Ruler,
   Settings,
   ShieldCheck,
   ChevronsUpDown,
@@ -46,6 +47,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/food", label: "Kost", icon: Flame },
   { href: "/dashboard/steps", label: "Skridt", icon: Footprints },
   { href: "/dashboard/weight", label: "Vægt", icon: Scale },
+  { href: "/dashboard/measurements", label: "Målinger", icon: Ruler },
   { href: "/dashboard/sleep", label: "Søvn", icon: Moon },
   { href: "/dashboard/workouts", label: "Træning", icon: Dumbbell },
 ];
