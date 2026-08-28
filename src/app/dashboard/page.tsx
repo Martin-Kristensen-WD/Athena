@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DashboardViewToggle } from "@/components/dashboard-view-toggle";
+import { AnimatedNumber } from "@/components/animated-number";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import {
@@ -239,7 +240,10 @@ function StatCard({
         </CardHeader>
         <CardContent className="flex items-end justify-between gap-2">
           <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
-            {currentAverage.toLocaleString("da-DK", { maximumFractionDigits: 0 })}{" "}
+            <AnimatedNumber
+              value={currentAverage}
+              formatOptions={{ maximumFractionDigits: 0 }}
+            />{" "}
             {unit && (
               <span className="font-sans text-lg font-normal text-muted-foreground">
                 {unit}
@@ -439,7 +443,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
-                {sessionsThisWeek}{" "}
+                <AnimatedNumber value={sessionsThisWeek} />{" "}
                 <span className="font-sans text-lg font-normal text-muted-foreground">
                   træningspas denne uge
                 </span>

@@ -23,7 +23,11 @@ export function TrendChart({
   emptyMessage?: string;
 }) {
   if (data.length < 2) {
-    return <p className="text-muted-foreground text-sm">{emptyMessage}</p>;
+    return (
+      <div className="flex h-56 items-center justify-center">
+        <p className="text-muted-foreground text-center text-sm">{emptyMessage}</p>
+      </div>
+    );
   }
 
   return (

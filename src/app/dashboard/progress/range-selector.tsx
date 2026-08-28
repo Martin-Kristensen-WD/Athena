@@ -9,6 +9,7 @@ export function RangeSelector({ active }: { active: RangeOption }) {
         <Link
           key={range}
           href={`/dashboard/progress?range=${range}`}
+          scroll={false}
           className={cn(
             "rounded-full px-3 py-1 text-sm font-medium transition-colors",
             range === active

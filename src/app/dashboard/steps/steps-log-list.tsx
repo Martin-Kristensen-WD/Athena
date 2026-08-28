@@ -98,8 +98,15 @@ export function StepsLogList({ rows }: { rows: StepsDayRow[] }) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.date}>
+        {rows.map((row, index) => (
+          <TableRow
+            key={row.date}
+            className="animate-in fade-in-0 slide-in-from-bottom-1 duration-300"
+            style={{
+              animationDelay: `${Math.min(index * 25, 400)}ms`,
+              animationFillMode: "backwards",
+            }}
+          >
             <TableCell>
               {new Date(`${row.date}T00:00:00`).toLocaleDateString("da-DK", {
                 weekday: "short",
