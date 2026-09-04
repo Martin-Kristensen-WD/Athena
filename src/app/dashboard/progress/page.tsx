@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { and, asc, eq, gte } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import {
@@ -62,6 +63,7 @@ export default async function ProgressPage({
       .where(eq(profiles.userId, userId)),
   ]);
   const weightUnit = profileRow[0]?.weightUnit ?? "kg";
+  const directExercise = alias(exercises, "direct_exercise");
 
   const [weightRows, measurementRows, photoRows, setRows] = await Promise.all([
     weightDefinition[0]
@@ -100,18 +102,20 @@ export default async function ProgressPage({
       .orderBy(asc(progressPhotos.takenAt)),
     db
       .select({
-        exerciseName: exercises.name,
+        programmeExerciseName: exercises.name,
+        directExerciseName: directExercise.name,
         weight: workoutSessionSets.weight,
         reps: workoutSessionSets.reps,
         startedAt: workoutSessions.startedAt,
       })
       .from(workoutSessionSets)
       .innerJoin(workoutSessions, eq(workoutSessionSets.sessionId, workoutSessions.id))
-      .innerJoin(
+      .leftJoin(
         programmeExercises,
         eq(workoutSessionSets.programmeExerciseId, programmeExercises.id)
       )
-      .innerJoin(exercises, eq(programmeExercises.exerciseId, exercises.id))
+      .leftJoin(exercises, eq(programmeExercises.exerciseId, exercises.id))
+      .leftJoin(directExercise, eq(directExercise.id, workoutSessionSets.exerciseId))
       .where(eq(workoutSessions.userId, userId))
       .orderBy(asc(workoutSessions.startedAt)),
   ]);
@@ -172,14 +176,16 @@ export default async function ProgressPage({
   };
   const exerciseComparison = new Map<string, ExerciseComparison>();
   for (const row of setRows) {
+    const exerciseName = row.programmeExerciseName ?? row.directExerciseName;
+    if (!exerciseName) continue;
     const date = entryDayKey(row.startedAt);
     const current: BestSet = {
       weight: row.weight !== null ? Number(row.weight) : null,
       reps: row.reps,
     };
-    const existing = exerciseComparison.get(row.exerciseName);
+    const existing = exerciseComparison.get(exerciseName);
     if (!existing) {
-      exerciseComparison.set(row.exerciseName, {
+      exerciseComparison.set(exerciseName, {
         firstDate: date,
         firstBest: current,
         lastDate: date,

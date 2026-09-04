@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { programmes, programmeDays, programmeExercises } from "./programmes";
+import { exercises } from "./exercises";
 
 export const workoutSessions = pgTable("workout_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -38,6 +39,11 @@ export const workoutSessionSets = pgTable(
       () => programmeExercises.id,
       { onDelete: "set null" }
     ),
+    // Set directly for freeform (no-programme) sessions, where there is no
+    // programmeExercise to hang the exercise off of.
+    exerciseId: uuid("exercise_id").references(() => exercises.id, {
+      onDelete: "set null",
+    }),
     setIndex: integer("set_index").notNull(),
     reps: integer("reps"),
     weight: numeric("weight"),

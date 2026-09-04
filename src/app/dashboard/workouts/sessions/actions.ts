@@ -12,7 +12,9 @@ import {
   workoutSessionSets,
 } from "@/db/schema";
 import {
+  freeWorkoutSessionSchema,
   workoutSessionSchema,
+  type FreeWorkoutSessionInput,
   type WorkoutSessionInput,
 } from "@/lib/validations/sessions";
 
@@ -75,6 +77,54 @@ export async function createWorkoutSession(values: WorkoutSessionInput) {
       exercise.sets.map((set, index) => ({
         sessionId: created.id,
         programmeExerciseId: exercise.programmeExerciseId,
+        setIndex: index,
+        reps: set.reps ?? null,
+        weight: set.weight !== undefined ? set.weight.toString() : null,
+      }))
+    );
+
+    if (setRows.length > 0) {
+      await tx.insert(workoutSessionSets).values(setRows);
+    }
+
+    return created.id;
+  });
+
+  revalidatePath("/dashboard/workouts");
+  return { success: true as const, sessionId };
+}
+
+export async function createFreeWorkoutSession(values: FreeWorkoutSessionInput) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Du skal være logget ind." };
+  }
+
+  const parsed = freeWorkoutSessionSchema.safeParse(values);
+  if (!parsed.success) {
+    return { error: "Tjek formularen, og prøv igen." };
+  }
+
+  const userId = session.user.id;
+  const { durationMinutes, notes, exercises } = parsed.data;
+
+  const db = getTransactionalDb();
+  const sessionId = await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(workoutSessions)
+      .values({
+        userId,
+        programmeId: null,
+        programmeDayId: null,
+        durationMinutes: durationMinutes ?? null,
+        notes: notes || null,
+      })
+      .returning({ id: workoutSessions.id });
+
+    const setRows = exercises.flatMap((exercise) =>
+      exercise.sets.map((set, index) => ({
+        sessionId: created.id,
+        exerciseId: exercise.exerciseId,
         setIndex: index,
         reps: set.reps ?? null,
         weight: set.weight !== undefined ? set.weight.toString() : null,

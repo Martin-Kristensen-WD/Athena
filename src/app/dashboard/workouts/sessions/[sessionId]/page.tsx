@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
 import { da } from "date-fns/locale";
 import { asc, eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import {
@@ -49,14 +50,18 @@ export default async function SessionDetailPage(
     notFound();
   }
 
+  const directExercise = alias(exercises, "direct_exercise");
+
   const setRows = await db
     .select({
       id: workoutSessionSets.id,
       programmeExerciseId: workoutSessionSets.programmeExerciseId,
+      exerciseId: workoutSessionSets.exerciseId,
       setIndex: workoutSessionSets.setIndex,
       reps: workoutSessionSets.reps,
       weight: workoutSessionSets.weight,
-      exerciseName: exercises.name,
+      programmeExerciseName: exercises.name,
+      directExerciseName: directExercise.name,
     })
     .from(workoutSessionSets)
     .leftJoin(
@@ -64,6 +69,7 @@ export default async function SessionDetailPage(
       eq(programmeExercises.id, workoutSessionSets.programmeExerciseId)
     )
     .leftJoin(exercises, eq(exercises.id, programmeExercises.exerciseId))
+    .leftJoin(directExercise, eq(directExercise.id, workoutSessionSets.exerciseId))
     .where(eq(workoutSessionSets.sessionId, sessionId))
     .orderBy(asc(workoutSessionSets.setIndex));
 
@@ -72,13 +78,16 @@ export default async function SessionDetailPage(
     { label: string; sets: { setIndex: number; reps: number | null; weight: string | null }[] }
   >();
   for (const row of setRows) {
-    const key = row.programmeExerciseId ?? `unlinked-${row.id}`;
+    const key = row.programmeExerciseId ?? row.exerciseId ?? `unlinked-${row.id}`;
     const existing = groups.get(key);
     if (existing) {
       existing.sets.push({ setIndex: row.setIndex, reps: row.reps, weight: row.weight });
     } else {
       groups.set(key, {
-        label: row.exerciseName ?? "Øvelse fjernet fra program",
+        label:
+          row.programmeExerciseName ??
+          row.directExerciseName ??
+          "Øvelse fjernet fra program",
         sets: [{ setIndex: row.setIndex, reps: row.reps, weight: row.weight }],
       });
     }

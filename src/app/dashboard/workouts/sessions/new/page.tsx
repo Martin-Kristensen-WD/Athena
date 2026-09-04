@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { asc, eq } from "drizzle-orm";
+import { Plus } from "lucide-react";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import {
@@ -10,7 +11,8 @@ import {
   programmeExercises,
   programmes,
 } from "@/db/schema";
-import { ProgrammePicker } from "../programme-picker";
+import { Button } from "@/components/ui/button";
+import { ProgrammeStartPicker, type ProgrammeOption } from "../programme-start-picker";
 import { DayPicker } from "../day-picker";
 import { SessionLogForm } from "../session-log-form";
 
@@ -33,45 +35,112 @@ export default async function NewSessionPage(
   const db = getDb();
 
   if (!programmeIdParam) {
-    const [userProgrammes, profileRows] = await Promise.all([
+    const [rows, profileRows] = await Promise.all([
       db
-        .select({ id: programmes.id, name: programmes.name })
+        .select({
+          programmeId: programmes.id,
+          programmeName: programmes.name,
+          programmeDescription: programmes.description,
+          dayId: programmeDays.id,
+          dayName: programmeDays.name,
+          dayOrderIndex: programmeDays.orderIndex,
+          exerciseId: programmeExercises.id,
+        })
         .from(programmes)
+        .leftJoin(programmeDays, eq(programmeDays.programmeId, programmes.id))
+        .leftJoin(
+          programmeExercises,
+          eq(programmeExercises.dayId, programmeDays.id)
+        )
         .where(eq(programmes.userId, session.user.id))
-        .orderBy(asc(programmes.name)),
+        .orderBy(asc(programmes.name), asc(programmeDays.orderIndex)),
       db
         .select({ activeProgrammeId: profiles.activeProgrammeId })
         .from(profiles)
         .where(eq(profiles.userId, session.user.id)),
     ]);
 
+    const programmeMap = new Map<string, ProgrammeOption>();
+    const dayExerciseCounts = new Map<string, number>();
+    for (const row of rows) {
+      if (!row.dayId) continue;
+      if (row.exerciseId) {
+        dayExerciseCounts.set(
+          row.dayId,
+          (dayExerciseCounts.get(row.dayId) ?? 0) + 1
+        );
+      } else if (!dayExerciseCounts.has(row.dayId)) {
+        dayExerciseCounts.set(row.dayId, 0);
+      }
+    }
+    for (const row of rows) {
+      let programme = programmeMap.get(row.programmeId);
+      if (!programme) {
+        programme = {
+          id: row.programmeId,
+          name: row.programmeName,
+          description: row.programmeDescription,
+          days: [],
+        };
+        programmeMap.set(row.programmeId, programme);
+      }
+      if (row.dayId && !programme.days.some((day) => day.id === row.dayId)) {
+        programme.days.push({
+          id: row.dayId,
+          name: row.dayName!,
+          exerciseCount: dayExerciseCounts.get(row.dayId) ?? 0,
+        });
+      }
+    }
+    const userProgrammes = Array.from(programmeMap.values());
+
     return (
-      <div className="max-w-md">
+      <div className="max-w-3xl">
         <h1 className="text-2xl font-semibold tracking-tight">
           Start et træningspas
         </h1>
         <p className="text-muted-foreground mt-1">
-          Vælg et program at registrere et træningspas ud fra.
+          Følg et program, eller improviser et tomt træningspas.
         </p>
-        {userProgrammes.length === 0 ? (
-          <p className="text-muted-foreground mt-6 rounded-lg border border-dashed p-6 text-center text-sm">
-            Du har ikke oprettet nogen programmer endnu.{" "}
-            <Link
-              href="/dashboard/workouts/programmes/new"
-              className="text-foreground underline"
-            >
-              Opret et
-            </Link>{" "}
-            først.
+
+        <div className="mt-6">
+          <h2 className="text-sm font-medium">Fra et program</h2>
+          {userProgrammes.length === 0 ? (
+            <p className="text-muted-foreground mt-3 rounded-lg border border-dashed p-6 text-center text-sm">
+              Du har ikke oprettet nogen programmer endnu.{" "}
+              <Link
+                href="/dashboard/workouts/programmes/new"
+                className="text-foreground underline"
+              >
+                Opret et
+              </Link>{" "}
+              først.
+            </p>
+          ) : (
+            <div className="mt-3">
+              <ProgrammeStartPicker
+                programmes={userProgrammes}
+                activeProgrammeId={profileRows[0]?.activeProgrammeId ?? null}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="mt-8 max-w-md border-t pt-6">
+          <h2 className="text-sm font-medium">Uden program</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Tilføj øvelser og sæt løbende, som du laver dem.
           </p>
-        ) : (
-          <div className="mt-6">
-            <ProgrammePicker
-              programmes={userProgrammes}
-              defaultProgrammeId={profileRows[0]?.activeProgrammeId}
-            />
-          </div>
-        )}
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3 w-full"
+            nativeButton={false}
+            render={<Link href="/dashboard/workouts/sessions/new/free" />}
+          >
+            <Plus /> Start tomt træningspas
+          </Button>
+        </div>
       </div>
     );
   }
@@ -86,11 +155,27 @@ export default async function NewSessionPage(
     notFound();
   }
 
-  const days = await db
-    .select({ id: programmeDays.id, name: programmeDays.name })
+  const dayRows = await db
+    .select({
+      id: programmeDays.id,
+      name: programmeDays.name,
+      exerciseId: programmeExercises.id,
+    })
     .from(programmeDays)
+    .leftJoin(
+      programmeExercises,
+      eq(programmeExercises.dayId, programmeDays.id)
+    )
     .where(eq(programmeDays.programmeId, programme.id))
     .orderBy(asc(programmeDays.orderIndex));
+
+  const dayMap = new Map<string, { id: string; name: string; exerciseCount: number }>();
+  for (const row of dayRows) {
+    const day = dayMap.get(row.id) ?? { id: row.id, name: row.name, exerciseCount: 0 };
+    if (row.exerciseId) day.exerciseCount += 1;
+    dayMap.set(row.id, day);
+  }
+  const days = Array.from(dayMap.values());
 
   if (days.length === 0) {
     return (
@@ -113,12 +198,6 @@ export default async function NewSessionPage(
   }
 
   if (!dayIdParam) {
-    if (days.length === 1) {
-      redirect(
-        `/dashboard/workouts/sessions/new?programmeId=${programme.id}&dayId=${days[0].id}`
-      );
-    }
-
     return (
       <div className="max-w-md">
         <h1 className="text-2xl font-semibold tracking-tight">

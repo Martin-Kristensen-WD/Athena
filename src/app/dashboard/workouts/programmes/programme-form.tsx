@@ -31,33 +31,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { ExerciseFormDialog } from "@/components/exercise-form-dialog";
-import type { ExerciseFormInput } from "@/lib/validations/exercises";
+  ExercisePickerDialog,
+  type ExerciseOption,
+} from "@/components/exercise-picker-dialog";
 import {
   programmeSchema,
   type ProgrammeInput,
 } from "@/lib/validations/programmes";
 import { createProgramme, updateProgramme } from "./actions";
-import { createExercise } from "../exercises-actions";
 
-export type ExerciseOption = {
-  id: string;
-  name: string;
-  muscleGroup: string;
-};
+export type { ExerciseOption };
 
 type ProgrammeFormValues = z.input<typeof programmeSchema>;
 
@@ -252,8 +235,6 @@ function ProgrammeDayCard({
   onMoveDown: () => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [createExerciseOpen, setCreateExerciseOpen] = useState(false);
 
   const { fields, append, remove, move } = useFieldArray({
     control,
@@ -265,17 +246,10 @@ function ProgrammeDayCard({
     [exercises]
   );
 
-  const groupedExercises = useMemo(() => {
-    const usedIds = new Set(fields.map((field) => field.exerciseId));
-    const available = exercises.filter((exercise) => !usedIds.has(exercise.id));
-    const groups = new Map<string, ExerciseOption[]>();
-    for (const exercise of available) {
-      const group = groups.get(exercise.muscleGroup) ?? [];
-      group.push(exercise);
-      groups.set(exercise.muscleGroup, group);
-    }
-    return Array.from(groups.entries());
-  }, [exercises, fields]);
+  const usedIds = useMemo(
+    () => new Set(fields.map((field) => field.exerciseId)),
+    [fields]
+  );
 
   function addExercise(exercise: ExerciseOption) {
     append({
@@ -288,23 +262,6 @@ function ProgrammeDayCard({
       restSeconds: undefined,
       notes: "",
     });
-    setPickerOpen(false);
-    setSearch("");
-  }
-
-  async function handleCreateExercise(values: ExerciseFormInput) {
-    const result = await createExercise(values);
-    if (result?.error || !result?.exerciseId) {
-      return { error: result?.error ?? "Kunne ikke oprette øvelsen." };
-    }
-    const newExercise: ExerciseOption = {
-      id: result.exerciseId,
-      name: values.name.trim(),
-      muscleGroup: values.muscleGroup,
-    };
-    toast.success("Øvelse oprettet");
-    onExerciseCreated(newExercise);
-    addExercise(newExercise);
   }
 
   return (
@@ -364,64 +321,13 @@ function ProgrammeDayCard({
             <Plus /> Tilføj øvelse
           </Button>
         </div>
-        <Dialog
+        <ExercisePickerDialog
           open={pickerOpen}
-          onOpenChange={(open) => {
-            setPickerOpen(open);
-            if (!open) setSearch("");
-          }}
-        >
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Tilføj en øvelse</DialogTitle>
-            </DialogHeader>
-            <Command className="rounded-lg border">
-              <CommandInput
-                placeholder="Søg efter øvelser..."
-                value={search}
-                onValueChange={setSearch}
-              />
-              <CommandList>
-                <CommandEmpty>Ingen øvelser fundet.</CommandEmpty>
-                {groupedExercises.map(([muscleGroup, items]) => (
-                  <CommandGroup
-                    key={muscleGroup}
-                    heading={formatMuscleGroup(muscleGroup)}
-                  >
-                    {items.map((exercise) => (
-                      <CommandItem
-                        key={exercise.id}
-                        value={exercise.name}
-                        keywords={[muscleGroup]}
-                        onSelect={() => addExercise(exercise)}
-                      >
-                        {exercise.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                ))}
-                <CommandGroup heading="Ny øvelse">
-                  <CommandItem
-                    value={`__create__${search}`}
-                    onSelect={() => setCreateExerciseOpen(true)}
-                  >
-                    <Plus /> Opret ny øvelse
-                    {search ? ` "${search}"` : ""}
-                  </CommandItem>
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </DialogContent>
-        </Dialog>
-
-        <ExerciseFormDialog
-          open={createExerciseOpen}
-          onOpenChange={setCreateExerciseOpen}
-          title="Opret ny øvelse"
-          description="Tilføjes til dine egne øvelser og denne dag."
-          defaultValues={{ name: search }}
-          submitLabel="Opret og tilføj"
-          onSubmit={handleCreateExercise}
+          onOpenChange={setPickerOpen}
+          exercises={exercises}
+          excludeIds={usedIds}
+          onSelect={addExercise}
+          onExerciseCreated={onExerciseCreated}
         />
 
         {fields.length === 0 ? (
