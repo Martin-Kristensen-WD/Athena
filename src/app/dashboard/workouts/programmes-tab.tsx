@@ -2,10 +2,17 @@ import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
-import { programmes, programmeExercises } from "@/db/schema";
+import { profiles, programmes, programmeDays, programmeExercises } from "@/db/schema";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Plus } from "lucide-react";
+import { ActiveProgrammeToggle } from "./programmes/active-programme-toggle";
 
 export async function ProgrammesTab() {
   const session = await auth();
@@ -14,34 +21,49 @@ export async function ProgrammesTab() {
   }
 
   const db = getDb();
-  const rows = await db
-    .select({
-      id: programmes.id,
-      name: programmes.name,
-      description: programmes.description,
-      exerciseId: programmeExercises.exerciseId,
-    })
-    .from(programmes)
-    .leftJoin(
-      programmeExercises,
-      eq(programmeExercises.programmeId, programmes.id)
-    )
-    .where(eq(programmes.userId, session.user.id))
-    .orderBy(desc(programmes.createdAt));
+  const [rows, profileRows] = await Promise.all([
+    db
+      .select({
+        id: programmes.id,
+        name: programmes.name,
+        description: programmes.description,
+        dayId: programmeDays.id,
+        exerciseId: programmeExercises.id,
+      })
+      .from(programmes)
+      .leftJoin(programmeDays, eq(programmeDays.programmeId, programmes.id))
+      .leftJoin(programmeExercises, eq(programmeExercises.dayId, programmeDays.id))
+      .where(eq(programmes.userId, session.user.id))
+      .orderBy(desc(programmes.createdAt)),
+    db
+      .select({ activeProgrammeId: profiles.activeProgrammeId })
+      .from(profiles)
+      .where(eq(profiles.userId, session.user.id)),
+  ]);
+
+  const activeProgrammeId = profileRows[0]?.activeProgrammeId ?? null;
 
   const programmeList = new Map<
     string,
-    { id: string; name: string; description: string | null; exerciseCount: number }
+    {
+      id: string;
+      name: string;
+      description: string | null;
+      dayIds: Set<string>;
+      exerciseCount: number;
+    }
   >();
   for (const row of rows) {
     const existing = programmeList.get(row.id);
     if (existing) {
+      if (row.dayId) existing.dayIds.add(row.dayId);
       if (row.exerciseId) existing.exerciseCount += 1;
     } else {
       programmeList.set(row.id, {
         id: row.id,
         name: row.name,
         description: row.description,
+        dayIds: new Set(row.dayId ? [row.dayId] : []),
         exerciseCount: row.exerciseId ? 1 : 0,
       });
     }
@@ -67,14 +89,19 @@ export async function ProgrammesTab() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {list.map((programme) => (
-            <Link
-              key={programme.id}
-              href={`/dashboard/workouts/programmes/${programme.id}`}
-            >
-              <Card className="h-full transition-colors hover:bg-muted/50">
-                <CardHeader>
+            <Card key={programme.id} className="h-full transition-colors hover:bg-muted/50">
+              <CardHeader>
+                <Link href={`/dashboard/workouts/programmes/${programme.id}`}>
                   <CardTitle>{programme.name}</CardTitle>
-                </CardHeader>
+                </Link>
+                <CardAction>
+                  <ActiveProgrammeToggle
+                    programmeId={programme.id}
+                    active={programme.id === activeProgrammeId}
+                  />
+                </CardAction>
+              </CardHeader>
+              <Link href={`/dashboard/workouts/programmes/${programme.id}`}>
                 <CardContent>
                   {programme.description && (
                     <p className="text-muted-foreground text-sm">
@@ -82,12 +109,14 @@ export async function ProgrammesTab() {
                     </p>
                   )}
                   <p className="text-muted-foreground mt-2 text-xs">
+                    {programme.dayIds.size}{" "}
+                    {programme.dayIds.size === 1 ? "dag" : "dage"} ·{" "}
                     {programme.exerciseCount}{" "}
                     {programme.exerciseCount === 1 ? "øvelse" : "øvelser"}
                   </p>
                 </CardContent>
-              </Card>
-            </Link>
+              </Link>
+            </Card>
           ))}
         </div>
       )}

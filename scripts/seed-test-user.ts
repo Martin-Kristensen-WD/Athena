@@ -312,9 +312,14 @@ async function main() {
   ];
 
   async function insertProgrammeExercises(programmeId: string, plan: typeof programmeAPlan) {
+    const [day] = await db
+      .insert(schema.programmeDays)
+      .values({ programmeId, name: "Dag 1", orderIndex: 0 })
+      .returning({ id: schema.programmeDays.id });
+
     await db.insert(schema.programmeExercises).values(
       plan.map((exercise, index) => ({
-        programmeId,
+        dayId: day.id,
         exerciseId: exerciseId(exercise.name),
         orderIndex: index,
         sets: exercise.sets,
@@ -325,16 +330,19 @@ async function main() {
     const inserted = await db
       .select({ id: schema.programmeExercises.id, orderIndex: schema.programmeExercises.orderIndex })
       .from(schema.programmeExercises)
-      .where(eq(schema.programmeExercises.programmeId, programmeId))
+      .where(eq(schema.programmeExercises.dayId, day.id))
       .orderBy(asc(schema.programmeExercises.orderIndex));
-    return plan.map((exercise, index) => ({
-      ...exercise,
-      programmeExerciseId: inserted[index].id,
-    }));
+    return {
+      dayId: day.id,
+      exercises: plan.map((exercise, index) => ({
+        ...exercise,
+        programmeExerciseId: inserted[index].id,
+      })),
+    };
   }
 
-  const programmeAExercises = await insertProgrammeExercises(programmeA.id, programmeAPlan);
-  const programmeBExercises = await insertProgrammeExercises(programmeB.id, programmeBPlan);
+  const programmeADay = await insertProgrammeExercises(programmeA.id, programmeAPlan);
+  const programmeBDay = await insertProgrammeExercises(programmeB.id, programmeBPlan);
 
   console.log("Seeding workout sessions...");
   const sessionRows: (typeof schema.workoutSessions.$inferInsert & { id: string })[] = [];
@@ -343,8 +351,9 @@ async function main() {
   for (let d = HISTORY_DAYS; d >= 0; d -= randInt(2, 3)) {
     const useA = toggle % 2 === 0;
     toggle++;
-    const exercisesForSession = useA ? programmeAExercises : programmeBExercises;
+    const exercisesForSession = useA ? programmeADay.exercises : programmeBDay.exercises;
     const programmeId = useA ? programmeA.id : programmeB.id;
+    const programmeDayId = useA ? programmeADay.dayId : programmeBDay.dayId;
 
     const sessionId = crypto.randomUUID();
     const startedAt = daysAgo(d);
@@ -354,6 +363,7 @@ async function main() {
       id: sessionId,
       userId,
       programmeId,
+      programmeDayId,
       startedAt,
       durationMinutes: randInt(40, 70),
     });

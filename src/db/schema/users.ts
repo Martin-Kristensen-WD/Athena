@@ -6,6 +6,7 @@ import {
   numeric,
   date,
 } from "drizzle-orm/pg-core";
+import { programmes } from "./programmes";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -37,6 +38,10 @@ export const profiles = pgTable("profiles", {
   milestoneTargetValue: numeric("milestone_target_value"),
   dailyCalorieTarget: numeric("daily_calorie_target"),
   dailyStepsTarget: numeric("daily_steps_target"),
+  activeProgrammeId: uuid("active_programme_id").references(
+    () => programmes.id,
+    { onDelete: "set null" }
+  ),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

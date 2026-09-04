@@ -41,9 +41,11 @@ export type PlannedExercise = {
 
 export function SessionLogForm({
   programmeId,
+  programmeDayId,
   exercises,
 }: {
   programmeId: string;
+  programmeDayId?: string;
   exercises: PlannedExercise[];
 }) {
   const router = useRouter();
@@ -58,6 +60,7 @@ export function SessionLogForm({
     resolver: zodResolver(workoutSessionSchema),
     defaultValues: {
       programmeId,
+      programmeDayId,
       durationMinutes: undefined,
       notes: "",
       exercises: exercises.map((exercise) => ({

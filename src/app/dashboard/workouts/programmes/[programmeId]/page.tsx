@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { asc, eq, or } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
-import { exercises, programmeExercises, programmes } from "@/db/schema";
+import { exercises, programmeDays, programmeExercises, programmes } from "@/db/schema";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import { ProgrammeForm } from "../programme-form";
@@ -29,11 +29,30 @@ export default async function ProgrammePage(
     notFound();
   }
 
-  const [rows, availableExercises] = await Promise.all([
+  const [days, rows, availableExercises] = await Promise.all([
     db
       .select()
+      .from(programmeDays)
+      .where(eq(programmeDays.programmeId, programmeId))
+      .orderBy(asc(programmeDays.orderIndex)),
+    db
+      .select({
+        id: programmeExercises.id,
+        dayId: programmeExercises.dayId,
+        exerciseId: programmeExercises.exerciseId,
+        orderIndex: programmeExercises.orderIndex,
+        sets: programmeExercises.sets,
+        targetReps: programmeExercises.targetReps,
+        targetWeight: programmeExercises.targetWeight,
+        restSeconds: programmeExercises.restSeconds,
+        notes: programmeExercises.notes,
+      })
       .from(programmeExercises)
-      .where(eq(programmeExercises.programmeId, programmeId))
+      .innerJoin(
+        programmeDays,
+        eq(programmeDays.id, programmeExercises.dayId)
+      )
+      .where(eq(programmeDays.programmeId, programmeId))
       .orderBy(asc(programmeExercises.orderIndex)),
     db
       .select({
@@ -52,18 +71,29 @@ export default async function ProgrammePage(
     availableExercises.map((exercise) => [exercise.id, exercise])
   );
 
+  const exercisesByDayId = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const list = exercisesByDayId.get(row.dayId) ?? [];
+    list.push(row);
+    exercisesByDayId.set(row.dayId, list);
+  }
+
   const initialValues = {
     name: programme.name,
     description: programme.description ?? "",
-    exercises: rows.map((row) => ({
-      exerciseId: row.exerciseId,
-      exerciseName: exerciseNameById.get(row.exerciseId)?.name,
-      muscleGroup: exerciseNameById.get(row.exerciseId)?.muscleGroup,
-      sets: row.sets,
-      targetReps: row.targetReps,
-      targetWeight: row.targetWeight != null ? Number(row.targetWeight) : undefined,
-      restSeconds: row.restSeconds ?? undefined,
-      notes: row.notes ?? "",
+    days: days.map((day) => ({
+      name: day.name,
+      exercises: (exercisesByDayId.get(day.id) ?? []).map((row) => ({
+        exerciseId: row.exerciseId,
+        exerciseName: exerciseNameById.get(row.exerciseId)?.name,
+        muscleGroup: exerciseNameById.get(row.exerciseId)?.muscleGroup,
+        sets: row.sets,
+        targetReps: row.targetReps,
+        targetWeight:
+          row.targetWeight != null ? Number(row.targetWeight) : undefined,
+        restSeconds: row.restSeconds ?? undefined,
+        notes: row.notes ?? "",
+      })),
     })),
   };
 

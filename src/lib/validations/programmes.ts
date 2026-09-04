@@ -21,13 +21,22 @@ export const programmeExerciseSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const programmeSchema = z.object({
-  name: z.string().min(1, "Navn er påkrævet"),
-  description: z.string().optional(),
+export const programmeDaySchema = z.object({
+  name: z.string().min(1, "Angiv et navn til dagen"),
   exercises: z
     .array(programmeExerciseSchema)
     .min(1, "Tilføj mindst én øvelse"),
 });
 
+export const programmeSchema = z.object({
+  name: z.string().min(1, "Navn er påkrævet"),
+  description: z.string().optional(),
+  days: z
+    .array(programmeDaySchema)
+    .min(1, "Tilføj mindst én dag")
+    .max(7, "Et program kan højst have 7 dage"),
+});
+
 export type ProgrammeExerciseInput = z.infer<typeof programmeExerciseSchema>;
+export type ProgrammeDayInput = z.infer<typeof programmeDaySchema>;
 export type ProgrammeInput = z.infer<typeof programmeSchema>;

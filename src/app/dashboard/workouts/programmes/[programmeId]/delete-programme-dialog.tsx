@@ -44,7 +44,7 @@ export function DeleteProgrammeDialog({ programmeId }: { programmeId: string }) 
         <AlertDialogHeader>
           <AlertDialogTitle>Slet dette program?</AlertDialogTitle>
           <AlertDialogDescription>
-            Dette fjerner programmet og dets øvelsesliste. Tidligere
+            Dette fjerner programmet og alle dets dage og øvelser. Tidligere
             træningspas registreret ud fra det bevares, men vil ikke længere
             være knyttet til et program. Denne handling kan ikke fortrydes.
           </AlertDialogDescription>

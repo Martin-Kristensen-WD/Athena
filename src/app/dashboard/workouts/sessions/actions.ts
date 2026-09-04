@@ -1,11 +1,16 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import { getTransactionalDb } from "@/db/transaction";
-import { programmes, workoutSessions, workoutSessionSets } from "@/db/schema";
+import {
+  programmes,
+  programmeDays,
+  workoutSessions,
+  workoutSessionSets,
+} from "@/db/schema";
 import {
   workoutSessionSchema,
   type WorkoutSessionInput,
@@ -23,7 +28,8 @@ export async function createWorkoutSession(values: WorkoutSessionInput) {
   }
 
   const userId = session.user.id;
-  const { programmeId, durationMinutes, notes, exercises } = parsed.data;
+  const { programmeId, programmeDayId, durationMinutes, notes, exercises } =
+    parsed.data;
 
   const [programme] = await getDb()
     .select({ id: programmes.id, userId: programmes.userId })
@@ -35,6 +41,23 @@ export async function createWorkoutSession(values: WorkoutSessionInput) {
     return { error: "Programmet blev ikke fundet." };
   }
 
+  if (programmeDayId) {
+    const [day] = await getDb()
+      .select({ id: programmeDays.id })
+      .from(programmeDays)
+      .where(
+        and(
+          eq(programmeDays.id, programmeDayId),
+          eq(programmeDays.programmeId, programmeId)
+        )
+      )
+      .limit(1);
+
+    if (!day) {
+      return { error: "Dagen blev ikke fundet i dette program." };
+    }
+  }
+
   const db = getTransactionalDb();
   const sessionId = await db.transaction(async (tx) => {
     const [created] = await tx
@@ -42,6 +65,7 @@ export async function createWorkoutSession(values: WorkoutSessionInput) {
       .values({
         userId,
         programmeId,
+        programmeDayId: programmeDayId ?? null,
         durationMinutes: durationMinutes ?? null,
         notes: notes || null,
       })

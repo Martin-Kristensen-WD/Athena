@@ -22,6 +22,7 @@ export const sessionExerciseLogSchema = z.object({
 
 export const workoutSessionSchema = z.object({
   programmeId: z.string().uuid("Vælg et program"),
+  programmeDayId: z.string().uuid().optional(),
   durationMinutes: optionalCoercedNumber(
     z.coerce.number().int().positive("Indtast en gyldig varighed")
   ),

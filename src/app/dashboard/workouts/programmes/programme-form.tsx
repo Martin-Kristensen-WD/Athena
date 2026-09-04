@@ -2,7 +2,11 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useFieldArray, useForm } from "react-hook-form";
+import {
+  useFieldArray,
+  useForm,
+  type Control,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { toast } from "sonner";
@@ -40,17 +44,24 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { ExerciseFormDialog } from "@/components/exercise-form-dialog";
+import type { ExerciseFormInput } from "@/lib/validations/exercises";
 import {
   programmeSchema,
   type ProgrammeInput,
 } from "@/lib/validations/programmes";
 import { createProgramme, updateProgramme } from "./actions";
+import { createExercise } from "../exercises-actions";
 
 export type ExerciseOption = {
   id: string;
   name: string;
   muscleGroup: string;
 };
+
+type ProgrammeFormValues = z.input<typeof programmeSchema>;
+
+const MAX_DAYS = 7;
 
 function formatMuscleGroup(value: string) {
   return value.replace(/_/g, " ");
@@ -68,7 +79,11 @@ export function ProgrammeForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [exerciseOptions, setExerciseOptions] = useState(exercises);
+
+  function handleExerciseCreated(exercise: ExerciseOption) {
+    setExerciseOptions((current) => [...current, exercise]);
+  }
 
   const form = useForm<
     z.input<typeof programmeSchema>,
@@ -79,45 +94,16 @@ export function ProgrammeForm({
     defaultValues: initialValues ?? {
       name: "",
       description: "",
-      exercises: [],
+      days: [{ name: "Dag 1", exercises: [] }],
     },
   });
 
-  const { fields, append, remove, move } = useFieldArray({
-    control: form.control,
-    name: "exercises",
-  });
-
-  const exercisesById = useMemo(
-    () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
-    [exercises]
-  );
-
-  const groupedExercises = useMemo(() => {
-    const usedIds = new Set(fields.map((field) => field.exerciseId));
-    const available = exercises.filter((exercise) => !usedIds.has(exercise.id));
-    const groups = new Map<string, ExerciseOption[]>();
-    for (const exercise of available) {
-      const group = groups.get(exercise.muscleGroup) ?? [];
-      group.push(exercise);
-      groups.set(exercise.muscleGroup, group);
-    }
-    return Array.from(groups.entries());
-  }, [exercises, fields]);
-
-  function addExercise(exercise: ExerciseOption) {
-    append({
-      exerciseId: exercise.id,
-      exerciseName: exercise.name,
-      muscleGroup: exercise.muscleGroup,
-      sets: 3,
-      targetReps: "8-12",
-      targetWeight: undefined,
-      restSeconds: undefined,
-      notes: "",
-    });
-    setPickerOpen(false);
-  }
+  const {
+    fields: dayFields,
+    append: appendDay,
+    remove: removeDay,
+    move: moveDay,
+  } = useFieldArray({ control: form.control, name: "days" });
 
   function onSubmit(values: ProgrammeInput) {
     setFormError(null);
@@ -143,9 +129,9 @@ export function ProgrammeForm({
     });
   }
 
-  const exercisesError = form.formState.errors.exercises;
-  const exercisesErrorMessage =
-    typeof exercisesError?.message === "string" ? exercisesError.message : null;
+  const daysError = form.formState.errors.days;
+  const daysErrorMessage =
+    typeof daysError?.message === "string" ? daysError.message : null;
 
   return (
     <Form {...form}>
@@ -183,233 +169,40 @@ export function ProgrammeForm({
           />
         </div>
 
-        <div>
+        <div className="grid gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Øvelser</h2>
-            <Button type="button" size="sm" onClick={() => setPickerOpen(true)}>
-              <Plus /> Tilføj øvelse
+            <h2 className="text-sm font-medium">Dage</h2>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={dayFields.length >= MAX_DAYS}
+              onClick={() =>
+                appendDay({ name: `Dag ${dayFields.length + 1}`, exercises: [] })
+              }
+            >
+              <Plus /> Tilføj dag
             </Button>
           </div>
-          <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Tilføj en øvelse</DialogTitle>
-              </DialogHeader>
-              <Command className="rounded-lg border">
-                <CommandInput placeholder="Søg efter øvelser..." />
-                <CommandList>
-                  <CommandEmpty>Ingen øvelser fundet.</CommandEmpty>
-                  {groupedExercises.map(([muscleGroup, items]) => (
-                    <CommandGroup
-                      key={muscleGroup}
-                      heading={formatMuscleGroup(muscleGroup)}
-                    >
-                      {items.map((exercise) => (
-                        <CommandItem
-                          key={exercise.id}
-                          value={exercise.name}
-                          keywords={[muscleGroup]}
-                          onSelect={() => addExercise(exercise)}
-                        >
-                          {exercise.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  ))}
-                </CommandList>
-              </Command>
-            </DialogContent>
-          </Dialog>
+          {daysErrorMessage && (
+            <p className="text-destructive text-sm">{daysErrorMessage}</p>
+          )}
 
-          {fields.length === 0 ? (
-            <p className="text-muted-foreground mt-3 rounded-lg border border-dashed p-6 text-center text-sm">
-              Ingen øvelser endnu. Tilføj en for at komme i gang.
-            </p>
-          ) : (
-            <div className="mt-3 rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Øvelse</TableHead>
-                    <TableHead className="w-20">Sæt</TableHead>
-                    <TableHead className="w-28">Mål-reps</TableHead>
-                    <TableHead className="w-28">Vægt</TableHead>
-                    <TableHead className="w-24">Pause (sek.)</TableHead>
-                    <TableHead>Noter</TableHead>
-                    <TableHead className="w-28 text-right">Handlinger</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fields.map((field, index) => {
-                    const exercise = exercisesById.get(field.exerciseId);
-                    return (
-                      <TableRow key={field.id}>
-                        <TableCell className="whitespace-normal">
-                          <div className="font-medium">
-                            {field.exerciseName ?? exercise?.name}
-                          </div>
-                          <div className="text-muted-foreground text-xs capitalize">
-                            {formatMuscleGroup(
-                              field.muscleGroup ?? exercise?.muscleGroup ?? ""
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`exercises.${index}.sets`}
-                            render={({ field: setsField }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    className="w-16"
-                                    {...setsField}
-                                    value={
-                                      (setsField.value as
-                                        | string
-                                        | number
-                                        | undefined) ?? ""
-                                    }
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`exercises.${index}.targetReps`}
-                            render={({ field: repsField }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input
-                                    placeholder="8-12"
-                                    className="w-24"
-                                    {...repsField}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`exercises.${index}.targetWeight`}
-                            render={({ field: weightField }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    step="0.5"
-                                    className="w-24"
-                                    {...weightField}
-                                    value={
-                                      (weightField.value as
-                                        | string
-                                        | number
-                                        | undefined) ?? ""
-                                    }
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`exercises.${index}.restSeconds`}
-                            render={({ field: restField }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    className="w-20"
-                                    {...restField}
-                                    value={
-                                      (restField.value as
-                                        | string
-                                        | number
-                                        | undefined) ?? ""
-                                    }
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`exercises.${index}.notes`}
-                            render={({ field: notesField }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Valgfrit"
-                                    className="w-32"
-                                    {...notesField}
-                                    value={notesField.value ?? ""}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              disabled={index === 0}
-                              onClick={() => move(index, index - 1)}
-                            >
-                              <ArrowUp />
-                              <span className="sr-only">Flyt op</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              disabled={index === fields.length - 1}
-                              onClick={() => move(index, index + 1)}
-                            >
-                              <ArrowDown />
-                              <span className="sr-only">Flyt ned</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => remove(index)}
-                            >
-                              <Trash2 />
-                              <span className="sr-only">Fjern</span>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          {exercisesErrorMessage && (
-            <p className="text-destructive mt-2 text-sm">
-              {exercisesErrorMessage}
-            </p>
-          )}
+          {dayFields.map((dayField, dayIndex) => (
+            <ProgrammeDayCard
+              key={dayField.id}
+              control={form.control}
+              exercises={exerciseOptions}
+              onExerciseCreated={handleExerciseCreated}
+              dayIndex={dayIndex}
+              canRemove={dayFields.length > 1}
+              canMoveUp={dayIndex > 0}
+              canMoveDown={dayIndex < dayFields.length - 1}
+              onRemove={() => removeDay(dayIndex)}
+              onMoveUp={() => moveDay(dayIndex, dayIndex - 1)}
+              onMoveDown={() => moveDay(dayIndex, dayIndex + 1)}
+            />
+          ))}
         </div>
 
         {formError && <p className="text-destructive text-sm">{formError}</p>}
@@ -432,5 +225,390 @@ export function ProgrammeForm({
         </div>
       </form>
     </Form>
+  );
+}
+
+function ProgrammeDayCard({
+  control,
+  exercises,
+  dayIndex,
+  canRemove,
+  canMoveUp,
+  canMoveDown,
+  onExerciseCreated,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+}: {
+  control: Control<ProgrammeFormValues>;
+  exercises: ExerciseOption[];
+  onExerciseCreated: (exercise: ExerciseOption) => void;
+  dayIndex: number;
+  canRemove: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onRemove: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [createExerciseOpen, setCreateExerciseOpen] = useState(false);
+
+  const { fields, append, remove, move } = useFieldArray({
+    control,
+    name: `days.${dayIndex}.exercises`,
+  });
+
+  const exercisesById = useMemo(
+    () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
+    [exercises]
+  );
+
+  const groupedExercises = useMemo(() => {
+    const usedIds = new Set(fields.map((field) => field.exerciseId));
+    const available = exercises.filter((exercise) => !usedIds.has(exercise.id));
+    const groups = new Map<string, ExerciseOption[]>();
+    for (const exercise of available) {
+      const group = groups.get(exercise.muscleGroup) ?? [];
+      group.push(exercise);
+      groups.set(exercise.muscleGroup, group);
+    }
+    return Array.from(groups.entries());
+  }, [exercises, fields]);
+
+  function addExercise(exercise: ExerciseOption) {
+    append({
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      muscleGroup: exercise.muscleGroup,
+      sets: 3,
+      targetReps: "8-12",
+      targetWeight: undefined,
+      restSeconds: undefined,
+      notes: "",
+    });
+    setPickerOpen(false);
+    setSearch("");
+  }
+
+  async function handleCreateExercise(values: ExerciseFormInput) {
+    const result = await createExercise(values);
+    if (result?.error || !result?.exerciseId) {
+      return { error: result?.error ?? "Kunne ikke oprette øvelsen." };
+    }
+    const newExercise: ExerciseOption = {
+      id: result.exerciseId,
+      name: values.name.trim(),
+      muscleGroup: values.muscleGroup,
+    };
+    toast.success("Øvelse oprettet");
+    onExerciseCreated(newExercise);
+    addExercise(newExercise);
+  }
+
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <FormField
+          control={control}
+          name={`days.${dayIndex}.name`}
+          render={({ field }) => (
+            <FormItem className="max-w-xs flex-1">
+              <FormLabel>Dagens navn</FormLabel>
+              <FormControl>
+                <Input placeholder="fx Dag 1 - Overkrop" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex items-center gap-1 pt-6">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={!canMoveUp}
+            onClick={onMoveUp}
+          >
+            <ArrowUp />
+            <span className="sr-only">Flyt dag op</span>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={!canMoveDown}
+            onClick={onMoveDown}
+          >
+            <ArrowDown />
+            <span className="sr-only">Flyt dag ned</span>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={!canRemove}
+            onClick={onRemove}
+          >
+            <Trash2 />
+            <span className="sr-only">Fjern dag</span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium">Øvelser</h3>
+          <Button type="button" size="sm" onClick={() => setPickerOpen(true)}>
+            <Plus /> Tilføj øvelse
+          </Button>
+        </div>
+        <Dialog
+          open={pickerOpen}
+          onOpenChange={(open) => {
+            setPickerOpen(open);
+            if (!open) setSearch("");
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Tilføj en øvelse</DialogTitle>
+            </DialogHeader>
+            <Command className="rounded-lg border">
+              <CommandInput
+                placeholder="Søg efter øvelser..."
+                value={search}
+                onValueChange={setSearch}
+              />
+              <CommandList>
+                <CommandEmpty>Ingen øvelser fundet.</CommandEmpty>
+                {groupedExercises.map(([muscleGroup, items]) => (
+                  <CommandGroup
+                    key={muscleGroup}
+                    heading={formatMuscleGroup(muscleGroup)}
+                  >
+                    {items.map((exercise) => (
+                      <CommandItem
+                        key={exercise.id}
+                        value={exercise.name}
+                        keywords={[muscleGroup]}
+                        onSelect={() => addExercise(exercise)}
+                      >
+                        {exercise.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                ))}
+                <CommandGroup heading="Ny øvelse">
+                  <CommandItem
+                    value={`__create__${search}`}
+                    onSelect={() => setCreateExerciseOpen(true)}
+                  >
+                    <Plus /> Opret ny øvelse
+                    {search ? ` "${search}"` : ""}
+                  </CommandItem>
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </DialogContent>
+        </Dialog>
+
+        <ExerciseFormDialog
+          open={createExerciseOpen}
+          onOpenChange={setCreateExerciseOpen}
+          title="Opret ny øvelse"
+          description="Tilføjes til dine egne øvelser og denne dag."
+          defaultValues={{ name: search }}
+          submitLabel="Opret og tilføj"
+          onSubmit={handleCreateExercise}
+        />
+
+        {fields.length === 0 ? (
+          <p className="text-muted-foreground mt-3 rounded-lg border border-dashed p-6 text-center text-sm">
+            Ingen øvelser endnu. Tilføj en for at komme i gang.
+          </p>
+        ) : (
+          <div className="mt-3 rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Øvelse</TableHead>
+                  <TableHead className="w-20">Sæt</TableHead>
+                  <TableHead className="w-28">Mål-reps</TableHead>
+                  <TableHead className="w-28">Vægt</TableHead>
+                  <TableHead className="w-24">Pause (sek.)</TableHead>
+                  <TableHead>Noter</TableHead>
+                  <TableHead className="w-28 text-right">Handlinger</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {fields.map((field, index) => {
+                  const exercise = exercisesById.get(field.exerciseId);
+                  return (
+                    <TableRow key={field.id}>
+                      <TableCell className="whitespace-normal">
+                        <div className="font-medium">
+                          {field.exerciseName ?? exercise?.name}
+                        </div>
+                        <div className="text-muted-foreground text-xs capitalize">
+                          {formatMuscleGroup(
+                            field.muscleGroup ?? exercise?.muscleGroup ?? ""
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <FormField
+                          control={control}
+                          name={`days.${dayIndex}.exercises.${index}.sets`}
+                          render={({ field: setsField }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  className="w-16"
+                                  {...setsField}
+                                  value={
+                                    (setsField.value as
+                                      | string
+                                      | number
+                                      | undefined) ?? ""
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <FormField
+                          control={control}
+                          name={`days.${dayIndex}.exercises.${index}.targetReps`}
+                          render={({ field: repsField }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  placeholder="8-12"
+                                  className="w-24"
+                                  {...repsField}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <FormField
+                          control={control}
+                          name={`days.${dayIndex}.exercises.${index}.targetWeight`}
+                          render={({ field: weightField }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  step="0.5"
+                                  className="w-24"
+                                  {...weightField}
+                                  value={
+                                    (weightField.value as
+                                      | string
+                                      | number
+                                      | undefined) ?? ""
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <FormField
+                          control={control}
+                          name={`days.${dayIndex}.exercises.${index}.restSeconds`}
+                          render={({ field: restField }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  className="w-20"
+                                  {...restField}
+                                  value={
+                                    (restField.value as
+                                      | string
+                                      | number
+                                      | undefined) ?? ""
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <FormField
+                          control={control}
+                          name={`days.${dayIndex}.exercises.${index}.notes`}
+                          render={({ field: notesField }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  placeholder="Valgfrit"
+                                  className="w-32"
+                                  {...notesField}
+                                  value={notesField.value ?? ""}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={index === 0}
+                            onClick={() => move(index, index - 1)}
+                          >
+                            <ArrowUp />
+                            <span className="sr-only">Flyt op</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={index === fields.length - 1}
+                            onClick={() => move(index, index + 1)}
+                          >
+                            <ArrowDown />
+                            <span className="sr-only">Flyt ned</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => remove(index)}
+                          >
+                            <Trash2 />
+                            <span className="sr-only">Fjern</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

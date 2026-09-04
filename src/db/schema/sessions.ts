@@ -8,7 +8,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
-import { programmes, programmeExercises } from "./programmes";
+import { programmes, programmeDays, programmeExercises } from "./programmes";
 
 export const workoutSessions = pgTable("workout_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -16,6 +16,9 @@ export const workoutSessions = pgTable("workout_sessions", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   programmeId: uuid("programme_id").references(() => programmes.id, {
+    onDelete: "set null",
+  }),
+  programmeDayId: uuid("programme_day_id").references(() => programmeDays.id, {
     onDelete: "set null",
   }),
   startedAt: timestamp("started_at").notNull().defaultNow(),

@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { getDb } from "@/db";
 import {
   exercises,
+  programmeDays,
   programmeExercises,
   programmes,
   workoutSessions,
@@ -33,9 +34,14 @@ export default async function SessionDetailPage(
       durationMinutes: workoutSessions.durationMinutes,
       notes: workoutSessions.notes,
       programmeName: programmes.name,
+      programmeDayName: programmeDays.name,
     })
     .from(workoutSessions)
     .leftJoin(programmes, eq(programmes.id, workoutSessions.programmeId))
+    .leftJoin(
+      programmeDays,
+      eq(programmeDays.id, workoutSessions.programmeDayId)
+    )
     .where(eq(workoutSessions.id, sessionId))
     .limit(1);
 
@@ -83,7 +89,11 @@ export default async function SessionDetailPage(
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {workoutSession.programmeName ?? "Frit træningspas"}
+            {workoutSession.programmeName
+              ? workoutSession.programmeDayName
+                ? `${workoutSession.programmeName} — ${workoutSession.programmeDayName}`
+                : workoutSession.programmeName
+              : "Frit træningspas"}
           </h1>
           <p className="text-muted-foreground mt-1">
             {format(workoutSession.startedAt, "PPP p", { locale: da })}

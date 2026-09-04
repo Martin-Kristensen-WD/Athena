@@ -29,12 +29,17 @@ export async function createExercise(values: ExerciseFormInput) {
   }
 
   const db = getDb();
+  let exerciseId: string;
   try {
-    await db.insert(exercises).values({
-      userId: session.user.id,
-      isSystem: false,
-      ...normalize(parsed.data),
-    });
+    const [created] = await db
+      .insert(exercises)
+      .values({
+        userId: session.user.id,
+        isSystem: false,
+        ...normalize(parsed.data),
+      })
+      .returning({ id: exercises.id });
+    exerciseId = created.id;
   } catch (error) {
     if (isUniqueViolation(error)) {
       return { error: "Du har allerede en øvelse med dette navn." };
@@ -43,7 +48,7 @@ export async function createExercise(values: ExerciseFormInput) {
   }
 
   revalidatePath("/dashboard/workouts");
-  return { success: true };
+  return { success: true as const, exerciseId };
 }
 
 export async function updateExercise(id: string, values: ExerciseFormInput) {
