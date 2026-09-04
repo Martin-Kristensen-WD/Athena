@@ -11,7 +11,13 @@ import { WeightLogForm } from "./weight-log-form";
 import { WeightLogList, type WeightDayRow } from "./weight-log-list";
 import { WeightCalendar } from "./weight-calendar";
 import { WeightYearHeatmap } from "./weight-year-heatmap";
-import { computeStreak, dateKey, entryDayKey } from "./date-utils";
+import {
+  averageForRange,
+  computeStreak,
+  dateKey,
+  entryDayKey,
+  startOfWeek,
+} from "./date-utils";
 
 function parseMonthParam(month: string | undefined) {
   const now = new Date();
@@ -116,15 +122,26 @@ export default async function WeightPage({
   const yearTrackedDays = new Set(dailyLatest.keys());
 
   const streakTrackedDays = new Set<string>();
+  const streakDailyLatest = new Map<string, number>();
   let todayWeight: number | null = null;
   for (const entry of streakEntries) {
     const key = entryDayKey(entry.loggedAt);
     streakTrackedDays.add(key);
+    streakDailyLatest.set(key, Number(entry.value));
     if (key === todayKey) {
       todayWeight = Number(entry.value);
     }
   }
   const streak = computeStreak(streakTrackedDays, todayStart);
+
+  const thisWeekStart = startOfWeek(todayStart);
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+  const nextWeekStart = new Date(thisWeekStart);
+  nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+
+  const thisWeekAverage = averageForRange(streakDailyLatest, thisWeekStart, nextWeekStart);
+  const lastWeekAverage = averageForRange(streakDailyLatest, lastWeekStart, thisWeekStart);
 
   const weightUnit = profile[0]?.weightUnit ?? "kg";
 
@@ -153,6 +170,34 @@ export default async function WeightPage({
             {streak}{" "}
             <span className="text-muted-foreground text-base font-normal">
               {streak === 1 ? "dag" : "dage"}
+            </span>
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-sm">Snit denne uge</p>
+          <p className="text-2xl font-semibold tabular-nums">
+            {thisWeekAverage !== null
+              ? thisWeekAverage.toLocaleString("da-DK", {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })
+              : "–"}{" "}
+            <span className="text-muted-foreground text-base font-normal">
+              {weightUnit}
+            </span>
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-sm">Snit sidste uge</p>
+          <p className="text-2xl font-semibold tabular-nums">
+            {lastWeekAverage !== null
+              ? lastWeekAverage.toLocaleString("da-DK", {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })
+              : "–"}{" "}
+            <span className="text-muted-foreground text-base font-normal">
+              {weightUnit}
             </span>
           </p>
         </div>
