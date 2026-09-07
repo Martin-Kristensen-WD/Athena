@@ -13,21 +13,21 @@ export default function WorkoutsPage() {
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Træning</h1>
-      <Tabs defaultValue="exercises" className="mt-6">
+      <Tabs defaultValue="programmes" className="mt-6">
         <TabsList>
           <TabsIndicator />
-          <TabsTrigger value="exercises">Øvelser</TabsTrigger>
           <TabsTrigger value="programmes">Programmer</TabsTrigger>
           <TabsTrigger value="sessions">Træningspas</TabsTrigger>
+          <TabsTrigger value="exercises">Øvelser</TabsTrigger>
         </TabsList>
-        <TabsContent value="exercises" className="mt-4">
-          <ExercisesTab />
-        </TabsContent>
         <TabsContent value="programmes" className="mt-4">
           <ProgrammesTab />
         </TabsContent>
         <TabsContent value="sessions" className="mt-4">
           <SessionsTab />
+        </TabsContent>
+        <TabsContent value="exercises" className="mt-4">
+          <ExercisesTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -7,10 +7,11 @@ import { getDb } from "@/db";
 import { metricDefinitions, metricEntries, profiles } from "@/db/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { TrackingCalendar } from "@/components/tracking-calendar";
+import { TrackingYearHeatmap } from "@/components/tracking-year-heatmap";
+import { TrackingStats } from "@/components/tracking-stats";
 import { WeightLogForm } from "./weight-log-form";
 import { WeightLogList, type WeightDayRow } from "./weight-log-list";
-import { WeightCalendar } from "./weight-calendar";
-import { WeightYearHeatmap } from "./weight-year-heatmap";
 import {
   averageForRange,
   computeStreak,
@@ -154,54 +155,43 @@ export default async function WeightPage({
         </p>
       </div>
 
-      <div className="flex gap-8">
-        <div>
-          <p className="text-muted-foreground text-sm">I dag</p>
-          <p className="text-2xl font-semibold tabular-nums">
-            {todayWeight !== null ? todayWeight.toLocaleString("da-DK") : "–"}{" "}
-            <span className="text-muted-foreground text-base font-normal">
-              {weightUnit}
-            </span>
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground text-sm">Streak</p>
-          <p className="text-2xl font-semibold tabular-nums">
-            {streak}{" "}
-            <span className="text-muted-foreground text-base font-normal">
-              {streak === 1 ? "dag" : "dage"}
-            </span>
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground text-sm">Snit denne uge</p>
-          <p className="text-2xl font-semibold tabular-nums">
-            {thisWeekAverage !== null
-              ? thisWeekAverage.toLocaleString("da-DK", {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 1,
-                })
-              : "–"}{" "}
-            <span className="text-muted-foreground text-base font-normal">
-              {weightUnit}
-            </span>
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground text-sm">Snit sidste uge</p>
-          <p className="text-2xl font-semibold tabular-nums">
-            {lastWeekAverage !== null
-              ? lastWeekAverage.toLocaleString("da-DK", {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 1,
-                })
-              : "–"}{" "}
-            <span className="text-muted-foreground text-base font-normal">
-              {weightUnit}
-            </span>
-          </p>
-        </div>
-      </div>
+      <TrackingStats
+        items={[
+          {
+            label: "I dag",
+            value:
+              todayWeight !== null ? todayWeight.toLocaleString("da-DK") : "–",
+            suffix: weightUnit,
+          },
+          {
+            label: "Streak",
+            value: String(streak),
+            suffix: streak === 1 ? "dag" : "dage",
+          },
+          {
+            label: "Snit denne uge",
+            value:
+              thisWeekAverage !== null
+                ? thisWeekAverage.toLocaleString("da-DK", {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  })
+                : "–",
+            suffix: weightUnit,
+          },
+          {
+            label: "Snit sidste uge",
+            value:
+              lastWeekAverage !== null
+                ? lastWeekAverage.toLocaleString("da-DK", {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  })
+                : "–",
+            suffix: weightUnit,
+          },
+        ]}
+      />
 
       <Card>
         <CardHeader>
@@ -237,7 +227,7 @@ export default async function WeightPage({
           </div>
         </CardHeader>
         <CardContent>
-          <WeightCalendar
+          <TrackingCalendar
             year={year}
             monthIndex={monthIndex}
             trackedDays={yearTrackedDays}
@@ -280,7 +270,7 @@ export default async function WeightPage({
           </div>
         </CardHeader>
         <CardContent>
-          <WeightYearHeatmap year={year} trackedDays={yearTrackedDays} />
+          <TrackingYearHeatmap year={year} trackedDays={yearTrackedDays} />
         </CardContent>
       </Card>
     </div>

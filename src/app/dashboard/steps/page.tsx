@@ -13,6 +13,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { dateKey } from "@/lib/date";
+import { TrackingCalendar } from "@/components/tracking-calendar";
+import { TrackingYearHeatmap } from "@/components/tracking-year-heatmap";
 import { StepsLogForm } from "./steps-log-form";
 import { StepsLogList, type StepsDayRow } from "./steps-log-list";
 
@@ -63,11 +66,14 @@ export default async function StepsPage({
   const { year, monthIndex } = parseMonthParam(month);
   const prevMonth = monthParam(year, monthIndex - 1);
   const nextMonth = monthParam(year, monthIndex + 1);
+  const prevYear = monthParam(year - 1, monthIndex);
+  const nextYear = monthParam(year + 1, monthIndex);
   const monthLabel = new Date(year, monthIndex, 1).toLocaleDateString("da-DK", {
     month: "long",
     year: "numeric",
   });
   const monthKeyPrefix = monthParam(year, monthIndex);
+  const todayKey = dateKey(new Date());
 
   const [profile, definitionRow] = await Promise.all([
     db
@@ -126,6 +132,8 @@ export default async function StepsPage({
     .filter(([date]) => date.startsWith(monthKeyPrefix))
     .map(([date, steps]) => ({ date, steps }))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  const trackedDays = new Set(dailyTotals.keys());
 
   const dailyStepsTarget = profile[0]?.dailyStepsTarget
     ? Number(profile[0].dailyStepsTarget)
@@ -220,7 +228,7 @@ export default async function StepsPage({
 
       <Card>
         <CardHeader className="flex items-center justify-between space-y-0">
-          <CardTitle>{monthLabel}</CardTitle>
+          <CardTitle className="capitalize">{monthLabel}</CardTitle>
           <div className="flex items-center gap-1">
             <Button
               size="icon-sm"
@@ -243,7 +251,50 @@ export default async function StepsPage({
           </div>
         </CardHeader>
         <CardContent>
+          <TrackingCalendar
+            year={year}
+            monthIndex={monthIndex}
+            trackedDays={trackedDays}
+            todayKey={todayKey}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Registreringer</CardTitle>
+        </CardHeader>
+        <CardContent>
           <StepsLogList rows={monthRows} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex items-center justify-between space-y-0">
+          <CardTitle>{year}</CardTitle>
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon-sm"
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={`/dashboard/steps?month=${prevYear}`} />}
+            >
+              <ChevronLeft className="size-4" />
+              <span className="sr-only">Forrige år</span>
+            </Button>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={`/dashboard/steps?month=${nextYear}`} />}
+            >
+              <ChevronRight className="size-4" />
+              <span className="sr-only">Næste år</span>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <TrackingYearHeatmap year={year} trackedDays={trackedDays} />
         </CardContent>
       </Card>
     </div>

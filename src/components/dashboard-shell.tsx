@@ -135,7 +135,7 @@ export function DashboardShell({
       <Sidebar variant="floating">
         <SidebarHeader className="px-3 pt-3 pb-1">
           <Link href="/dashboard" className="flex items-center px-1 py-1.5">
-            <Logo className="h-6 w-auto" priority />
+            <Logo className="mx-auto h-6 w-auto" priority />
           </Link>
         </SidebarHeader>
         <SidebarContent className="px-2 pt-2">
