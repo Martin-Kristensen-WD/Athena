@@ -15,7 +15,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/date-picker";
+import { SubmitButton, useSubmitSuccess } from "@/components/submit-button";
 import { logWeightEntrySchema, type LogWeightEntryInput } from "@/lib/validations/weight";
 import { logWeightEntry } from "./actions";
 
@@ -29,6 +30,7 @@ export function WeightLogForm({ weightUnit }: { weightUnit: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
+  const { success, flashSuccess } = useSubmitSuccess();
 
   const form = useForm<
     z.input<typeof logWeightEntrySchema>,
@@ -56,6 +58,7 @@ export function WeightLogForm({ weightUnit }: { weightUnit: string }) {
         return;
       }
       toast.success("Vægt registreret");
+      flashSuccess();
       form.reset({
         date: toLocalDateInputValue(new Date()),
         weight: undefined,
@@ -75,7 +78,12 @@ export function WeightLogForm({ weightUnit }: { weightUnit: string }) {
               <FormItem>
                 <FormLabel>Dato</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <DatePicker
+                    name={field.name}
+                    value={(field.value as string) ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -102,9 +110,13 @@ export function WeightLogForm({ weightUnit }: { weightUnit: string }) {
         </div>
         {formError && <p className="text-destructive text-sm">{formError}</p>}
         <div>
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Registrerer..." : "Registrer vægt"}
-          </Button>
+          <SubmitButton
+            pending={isPending}
+            success={success}
+            pendingLabel="Registrerer..."
+          >
+            Registrer vægt
+          </SubmitButton>
         </div>
       </form>
     </Form>

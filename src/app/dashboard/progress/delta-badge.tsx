@@ -6,7 +6,7 @@ export function DeltaBadge({ delta, unit }: { delta: number; unit: string }) {
     <span
       className={
         delta > 0
-          ? "text-sm font-medium text-primary"
+          ? "text-sm font-medium text-success"
           : "text-sm font-medium text-destructive"
       }
     >

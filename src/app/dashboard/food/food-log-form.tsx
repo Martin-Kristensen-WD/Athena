@@ -15,7 +15,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/date-picker";
+import { SubmitButton, useSubmitSuccess } from "@/components/submit-button";
 import { logFoodEntrySchema, type LogFoodEntryInput } from "@/lib/validations/food";
 import { logFoodEntry } from "./actions";
 
@@ -29,6 +30,7 @@ export function FoodLogForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
+  const { success, flashSuccess } = useSubmitSuccess();
 
   const form = useForm<
     z.input<typeof logFoodEntrySchema>,
@@ -59,6 +61,7 @@ export function FoodLogForm() {
         return;
       }
       toast.success("Mad registreret");
+      flashSuccess();
       form.reset({
         date: toLocalDateInputValue(new Date()),
         kcal: undefined,
@@ -81,7 +84,12 @@ export function FoodLogForm() {
               <FormItem>
                 <FormLabel>Dato</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <DatePicker
+                    name={field.name}
+                    value={(field.value as string) ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -164,9 +172,13 @@ export function FoodLogForm() {
         </div>
         {formError && <p className="text-destructive text-sm">{formError}</p>}
         <div>
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Registrerer..." : "Registrer mad"}
-          </Button>
+          <SubmitButton
+            pending={isPending}
+            success={success}
+            pendingLabel="Registrerer..."
+          >
+            Registrer mad
+          </SubmitButton>
         </div>
       </form>
     </Form>

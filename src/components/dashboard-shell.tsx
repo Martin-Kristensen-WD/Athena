@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
-  Activity,
   LayoutDashboard,
   Scale,
   Moon,
@@ -41,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { QuickAddFab } from "@/components/quick-add-fab";
+import { Logo } from "@/components/logo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -134,13 +134,8 @@ export function DashboardShell({
     <SidebarProvider>
       <Sidebar variant="floating">
         <SidebarHeader className="px-3 pt-3 pb-1">
-          <Link href="/dashboard" className="flex items-center gap-2 px-1 py-1">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Activity className="size-4.5" />
-            </span>
-            <span className="text-lg font-semibold tracking-tight text-sidebar-foreground">
-              Athena
-            </span>
+          <Link href="/dashboard" className="flex items-center px-1 py-1.5">
+            <Logo className="h-6 w-auto" priority />
           </Link>
         </SidebarHeader>
         <SidebarContent className="px-2 pt-2">
@@ -181,7 +176,7 @@ export function DashboardShell({
           <UserMenu user={user} />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="m-2 md:ml-0 rounded-2xl bg-card shadow-[0_1px_2px_rgba(22,35,28,0.04)] ring-1 ring-border">
+      <SidebarInset className="m-2 md:ml-0 rounded-2xl bg-card shadow-[0_1px_2px_rgba(20,20,18,0.05)] ring-1 ring-border">
         <header className="flex items-center border-b border-border px-4 py-2.5 md:hidden">
           <SidebarTrigger />
         </header>

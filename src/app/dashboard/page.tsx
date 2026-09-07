@@ -86,7 +86,7 @@ function TrendBadge({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
-        sentiment === "good" && "bg-primary/10 text-primary",
+        sentiment === "good" && "bg-success/10 text-success",
         sentiment === "bad" && "bg-destructive/10 text-destructive",
         sentiment === "neutral" && "bg-muted text-muted-foreground"
       )}
