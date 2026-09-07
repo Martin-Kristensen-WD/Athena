@@ -54,3 +54,91 @@ export type SessionExerciseLogInput = z.infer<typeof sessionExerciseLogSchema>;
 export type WorkoutSessionInput = z.infer<typeof workoutSessionSchema>;
 export type FreeSessionExerciseLogInput = z.infer<typeof freeSessionExerciseLogSchema>;
 export type FreeWorkoutSessionInput = z.infer<typeof freeWorkoutSessionSchema>;
+
+// ---------------------------------------------------------------------------
+// Live (server-persisted, resumable) workout sessions
+// ---------------------------------------------------------------------------
+
+/**
+ * How a session set is hung off an exercise: programme sessions reference a
+ * `programmeExercise`, freeform sessions reference the `exercise` directly.
+ */
+export const exerciseRefSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("programme"),
+    programmeExerciseId: z.string().uuid(),
+  }),
+  z.object({
+    kind: z.literal("exercise"),
+    exerciseId: z.string().uuid(),
+  }),
+]);
+
+export const startSessionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("programme"),
+    programmeId: z.string().uuid("Vælg et program"),
+    programmeDayId: z.string().uuid("Vælg en dag"),
+  }),
+  z.object({ kind: z.literal("free") }),
+]);
+
+export const saveSessionSetSchema = z.object({
+  sessionId: z.string().uuid(),
+  setId: z.string().uuid(),
+  ref: exerciseRefSchema,
+  setIndex: z.coerce.number().int().nonnegative(),
+  reps: optionalCoercedNumber(
+    z.coerce.number().int().nonnegative("Indtast gyldige reps")
+  ),
+  weight: optionalCoercedNumber(
+    z.coerce.number().nonnegative("Indtast en gyldig vægt")
+  ),
+  done: z.boolean(),
+});
+
+export const addSessionSetSchema = z.object({
+  sessionId: z.string().uuid(),
+  setId: z.string().uuid(),
+  ref: exerciseRefSchema,
+  setIndex: z.coerce.number().int().nonnegative(),
+});
+
+export const removeSessionSetSchema = z.object({
+  sessionId: z.string().uuid(),
+  setId: z.string().uuid(),
+});
+
+export const addSessionExerciseSchema = z.object({
+  sessionId: z.string().uuid(),
+  exerciseId: z.string().uuid("Vælg en øvelse"),
+});
+
+export const removeSessionExerciseSchema = z.object({
+  sessionId: z.string().uuid(),
+  ref: exerciseRefSchema,
+});
+
+export const finishSessionSchema = z.object({
+  sessionId: z.string().uuid(),
+  durationMinutes: optionalCoercedNumber(
+    z.coerce.number().int().positive("Indtast en gyldig varighed")
+  ),
+  notes: z.string().max(2000).optional(),
+});
+
+export const discardSessionSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+
+export type ExerciseRef = z.infer<typeof exerciseRefSchema>;
+export type StartSessionInput = z.infer<typeof startSessionSchema>;
+export type SaveSessionSetInput = z.infer<typeof saveSessionSetSchema>;
+export type AddSessionSetInput = z.infer<typeof addSessionSetSchema>;
+export type RemoveSessionSetInput = z.infer<typeof removeSessionSetSchema>;
+export type AddSessionExerciseInput = z.infer<typeof addSessionExerciseSchema>;
+export type RemoveSessionExerciseInput = z.infer<
+  typeof removeSessionExerciseSchema
+>;
+export type FinishSessionInput = z.infer<typeof finishSessionSchema>;
+export type DiscardSessionInput = z.infer<typeof discardSessionSchema>;

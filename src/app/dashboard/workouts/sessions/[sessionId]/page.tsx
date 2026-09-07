@@ -14,6 +14,7 @@ import {
   workoutSessionSets,
 } from "@/db/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatDuration } from "@/lib/date";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DeleteSessionDialog } from "./delete-session-dialog";
 
@@ -31,7 +32,9 @@ export default async function SessionDetailPage(
     .select({
       id: workoutSessions.id,
       userId: workoutSessions.userId,
+      status: workoutSessions.status,
       startedAt: workoutSessions.startedAt,
+      completedAt: workoutSessions.completedAt,
       durationMinutes: workoutSessions.durationMinutes,
       notes: workoutSessions.notes,
       programmeName: programmes.name,
@@ -48,6 +51,10 @@ export default async function SessionDetailPage(
 
   if (!workoutSession || workoutSession.userId !== session.user.id) {
     notFound();
+  }
+
+  if (workoutSession.status === "active") {
+    redirect(`/dashboard/workouts/sessions/${sessionId}/live`);
   }
 
   const directExercise = alias(exercises, "direct_exercise");
@@ -105,9 +112,11 @@ export default async function SessionDetailPage(
               : "Frit træningspas"}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {format(workoutSession.startedAt, "PPP p", { locale: da })}
+            {format(workoutSession.completedAt ?? workoutSession.startedAt, "PPP p", {
+              locale: da,
+            })}
             {workoutSession.durationMinutes != null &&
-              ` · ${workoutSession.durationMinutes} min`}
+              ` · ${formatDuration(workoutSession.durationMinutes)}`}
           </p>
         </div>
         <DeleteSessionDialog sessionId={workoutSession.id} />

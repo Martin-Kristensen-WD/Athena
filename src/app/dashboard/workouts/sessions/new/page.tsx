@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { ProgrammeStartPicker, type ProgrammeOption } from "../programme-start-picker";
 import { DayPicker } from "../day-picker";
 import { SessionLogForm } from "../session-log-form";
+import { StartSessionButton } from "../start-session-button";
+import { getActiveSessionId } from "../live-queries";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -31,6 +33,13 @@ export default async function NewSessionPage(
   const searchParams = await props.searchParams;
   const programmeIdParam = firstParam(searchParams.programmeId);
   const dayIdParam = firstParam(searchParams.dayId);
+  const manual = firstParam(searchParams.mode) === "manual";
+
+  // Resume an in-progress session rather than letting the user start a second.
+  const activeSessionId = await getActiveSessionId(session.user.id);
+  if (activeSessionId && !manual) {
+    redirect(`/dashboard/workouts/sessions/${activeSessionId}/live`);
+  }
 
   const db = getDb();
 
@@ -251,20 +260,65 @@ export default async function NewSessionPage(
     );
   }
 
+  if (manual) {
+    return (
+      <div className="max-w-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Registrer træningspas: {programme.name} — {day.name}
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Indtast hvad du faktisk lavede for hvert sæt.
+        </p>
+        <div className="mt-6">
+          <SessionLogForm
+            programmeId={programme.id}
+            programmeDayId={day.id}
+            exercises={plannedExercises}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold tracking-tight">
-        Registrer træningspas: {programme.name} — {day.name}
+        {programme.name} — {day.name}
       </h1>
       <p className="text-muted-foreground mt-1">
-        Indtast hvad du faktisk lavede for hvert sæt.
+        Start træningspasset og registrér hvert sæt undervejs. Hviletimer og
+        sidste gangs tal vises for hver øvelse.
       </p>
-      <div className="mt-6">
-        <SessionLogForm
-          programmeId={programme.id}
-          programmeDayId={day.id}
-          exercises={plannedExercises}
-        />
+      <ul className="mt-6 grid gap-2">
+        {plannedExercises.map((exercise) => (
+          <li
+            key={exercise.id}
+            className="flex items-center justify-between rounded-lg border p-3 text-sm"
+          >
+            <span className="font-medium">{exercise.exerciseName}</span>
+            <span className="text-muted-foreground tabular-nums">
+              {exercise.sets} × {exercise.targetReps}
+              {exercise.targetWeight ? ` @ ${exercise.targetWeight}` : ""}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        <StartSessionButton
+          input={{
+            kind: "programme",
+            programmeId: programme.id,
+            programmeDayId: day.id,
+          }}
+        >
+          Start træning
+        </StartSessionButton>
+        <Link
+          href={`/dashboard/workouts/sessions/new?programmeId=${programme.id}&dayId=${day.id}&mode=manual`}
+          className="text-sm text-muted-foreground underline"
+        >
+          Registrér manuelt i stedet
+        </Link>
       </div>
     </div>
   );

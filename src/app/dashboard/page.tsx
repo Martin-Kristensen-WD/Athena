@@ -14,10 +14,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { startOfWeek } from "@/lib/date";
 import { DashboardViewToggle } from "@/components/dashboard-view-toggle";
 import { AnimatedNumber } from "@/components/animated-number";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
+import { getActiveSessionId } from "@/app/dashboard/workouts/sessions/live-queries";
 import {
   metricDefinitions,
   metricEntries,
@@ -198,9 +200,19 @@ async function getWeeklyStatData(
       )
     );
 
+  // Calendar week (Mon–Sun), so the average resets every Monday rather than
+  // sliding over a rolling 7-day window.
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = startOfWeek(todayStart);
+  const lastWeekStart = new Date(weekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+  const nextWeekStart = new Date(weekStart);
+  nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+
   const [currentAverage, previousAverage] = await Promise.all([
-    getWeeklyAverage(db, userId, definition.id, daysAgo(7), new Date(), aggregation),
-    getWeeklyAverage(db, userId, definition.id, daysAgo(14), daysAgo(7), aggregation),
+    getWeeklyAverage(db, userId, definition.id, weekStart, nextWeekStart, aggregation),
+    getWeeklyAverage(db, userId, definition.id, lastWeekStart, weekStart, aggregation),
   ]);
 
   return { definition, isTracked: Boolean(tracked), currentAverage, previousAverage };
@@ -261,17 +273,27 @@ function StatCard({
           </div>
         </CardHeader>
         <CardContent className="flex items-end justify-between gap-2">
-          <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
-            <AnimatedNumber
-              value={currentAverage}
-              formatOptions={{ maximumFractionDigits: 0 }}
-            />{" "}
-            {unit && (
-              <span className="font-sans text-lg font-normal text-muted-foreground">
-                {unit}
-              </span>
-            )}
-          </p>
+          <div>
+            <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
+              <AnimatedNumber
+                value={currentAverage}
+                formatOptions={{ maximumFractionDigits: 0 }}
+              />{" "}
+              {unit && (
+                <span className="font-sans text-lg font-normal text-muted-foreground">
+                  {unit}
+                </span>
+              )}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+              Sidste uge:{" "}
+              {previousAverage !== null
+                ? `${previousAverage.toLocaleString("da-DK", {
+                    maximumFractionDigits: 0,
+                  })}${unit ? ` ${unit}` : ""}`
+                : "–"}
+            </p>
+          </div>
           {sentimentFor && (
             <TrendBadge trend={trend} sentiment={sentimentFor(trend.direction)} />
           )}
@@ -312,6 +334,7 @@ export default async function DashboardPage() {
     profile,
     recentSessions,
     weekSessions,
+    activeSessionId,
   ] = await Promise.all([
     getWeeklyStatData(db, userId, "calories"),
     getWeeklyStatData(db, userId, "steps"),
@@ -353,6 +376,7 @@ export default async function DashboardPage() {
           gte(workoutSessions.startedAt, daysAgo(7))
         )
       ),
+    getActiveSessionId(userId),
   ]);
 
   const lastSession = recentSessions[0] ?? null;
@@ -473,16 +497,30 @@ export default async function DashboardPage() {
           data={sleepData}
         />
 
-        <Link href="/dashboard/workouts" className="group block">
-          <Card className="transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
+        <Link
+          href={
+            activeSessionId
+              ? `/dashboard/workouts/sessions/${activeSessionId}/live`
+              : "/dashboard/workouts"
+          }
+          className="group block"
+        >
+          <Card
+            className={cn(
+              "transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md",
+              activeSessionId && "border-primary/40 bg-primary/5"
+            )}
+          >
             <CardHeader className="flex items-center gap-3 space-y-0">
               <CardIcon icon={Dumbbell} tone="workouts" />
               <div className="min-w-0 flex-1">
                 <CardTitle>Træning</CardTitle>
                 <CardDescription className="truncate">
-                  {lastSession
-                    ? `Seneste træning ${lastSession.startedAt.toLocaleDateString("da-DK")}`
-                    : "Ingen træning registreret endnu"}
+                  {activeSessionId
+                    ? "Træningspas i gang – fortsæt"
+                    : lastSession
+                      ? `Seneste træning ${lastSession.startedAt.toLocaleDateString("da-DK")}`
+                      : "Ingen træning registreret endnu"}
                 </CardDescription>
               </div>
               <CardAction>
