@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import {
   Flame,
   Footprints,
@@ -127,81 +127,21 @@ type WeeklyStatData = {
   previousAverage: number | null;
 };
 
-async function getWeeklyAverage(
+// Metrics whose daily value is the latest reading of the day (weight), rather
+// than the sum of the day's entries (calories, steps, sleep hours).
+const LAST_READING_KEYS = new Set<string>(["weight"]);
+
+/**
+ * Weekly (calendar Mon–Sun) daily-average for several metrics at once, in
+ * three queries total: the definitions, the user's tracked flags, and one
+ * windowed pull of every relevant entry for both the current and previous
+ * week. Aggregation (sum vs. last reading) is applied per metric in JS.
+ */
+async function getWeeklyStats(
   db: ReturnType<typeof getDb>,
   userId: string,
-  metricDefinitionId: string,
-  windowStart: Date,
-  windowEnd: Date,
-  aggregation: "sum" | "last" = "sum"
-): Promise<number | null> {
-  const entries = await db
-    .select({ value: metricEntries.value, loggedAt: metricEntries.loggedAt })
-    .from(metricEntries)
-    .where(
-      and(
-        eq(metricEntries.userId, userId),
-        eq(metricEntries.metricDefinitionId, metricDefinitionId),
-        gte(metricEntries.loggedAt, windowStart),
-        lt(metricEntries.loggedAt, windowEnd)
-      )
-    )
-    .orderBy(asc(metricEntries.loggedAt));
-
-  if (entries.length === 0) {
-    return null;
-  }
-
-  const dailyValues = new Map<string, number>();
-  for (const entry of entries) {
-    const dayKey = entry.loggedAt.toISOString().slice(0, 10);
-    const value = Number(entry.value);
-    if (aggregation === "sum") {
-      dailyValues.set(dayKey, (dailyValues.get(dayKey) ?? 0) + value);
-    } else {
-      // "last": entries are ordered ascending, so later entries overwrite
-      // earlier ones within the same day, leaving the day's latest reading.
-      dailyValues.set(dayKey, value);
-    }
-  }
-
-  const values = [...dailyValues.values()];
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-async function getWeeklyStatData(
-  db: ReturnType<typeof getDb>,
-  userId: string,
-  key: string,
-  aggregation: "sum" | "last" = "sum"
-): Promise<WeeklyStatData> {
-  const [definition] = await db
-    .select({
-      id: metricDefinitions.id,
-      key: metricDefinitions.key,
-      label: metricDefinitions.label,
-      unit: metricDefinitions.unit,
-    })
-    .from(metricDefinitions)
-    .where(eq(metricDefinitions.key, key));
-
-  if (!definition) {
-    return { definition: null, isTracked: false, currentAverage: null, previousAverage: null };
-  }
-
-  const [tracked] = await db
-    .select({ id: userTrackedMetrics.id })
-    .from(userTrackedMetrics)
-    .where(
-      and(
-        eq(userTrackedMetrics.userId, userId),
-        eq(userTrackedMetrics.metricDefinitionId, definition.id),
-        eq(userTrackedMetrics.isEnabled, true)
-      )
-    );
-
-  // Calendar week (Mon–Sun), so the average resets every Monday rather than
-  // sliding over a rolling 7-day window.
+  keys: readonly string[]
+): Promise<Map<string, WeeklyStatData>> {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = startOfWeek(todayStart);
@@ -210,12 +150,101 @@ async function getWeeklyStatData(
   const nextWeekStart = new Date(weekStart);
   nextWeekStart.setDate(nextWeekStart.getDate() + 7);
 
-  const [currentAverage, previousAverage] = await Promise.all([
-    getWeeklyAverage(db, userId, definition.id, weekStart, nextWeekStart, aggregation),
-    getWeeklyAverage(db, userId, definition.id, lastWeekStart, weekStart, aggregation),
+  const result = new Map<string, WeeklyStatData>();
+  for (const key of keys) {
+    result.set(key, {
+      definition: null,
+      isTracked: false,
+      currentAverage: null,
+      previousAverage: null,
+    });
+  }
+
+  const definitions = await db
+    .select({
+      id: metricDefinitions.id,
+      key: metricDefinitions.key,
+      label: metricDefinitions.label,
+      unit: metricDefinitions.unit,
+    })
+    .from(metricDefinitions)
+    .where(inArray(metricDefinitions.key, keys as string[]));
+
+  if (definitions.length === 0) return result;
+
+  const defById = new Map(definitions.map((def) => [def.id, def]));
+  const defIds = definitions.map((def) => def.id);
+
+  const [tracked, entries] = await Promise.all([
+    db
+      .select({ metricDefinitionId: userTrackedMetrics.metricDefinitionId })
+      .from(userTrackedMetrics)
+      .where(
+        and(
+          eq(userTrackedMetrics.userId, userId),
+          eq(userTrackedMetrics.isEnabled, true),
+          inArray(userTrackedMetrics.metricDefinitionId, defIds)
+        )
+      ),
+    db
+      .select({
+        metricDefinitionId: metricEntries.metricDefinitionId,
+        value: metricEntries.value,
+        loggedAt: metricEntries.loggedAt,
+      })
+      .from(metricEntries)
+      .where(
+        and(
+          eq(metricEntries.userId, userId),
+          inArray(metricEntries.metricDefinitionId, defIds),
+          gte(metricEntries.loggedAt, lastWeekStart),
+          lt(metricEntries.loggedAt, nextWeekStart)
+        )
+      )
+      .orderBy(asc(metricEntries.loggedAt)),
   ]);
 
-  return { definition, isTracked: Boolean(tracked), currentAverage, previousAverage };
+  const trackedIds = new Set(tracked.map((row) => row.metricDefinitionId));
+
+  type DayMap = Map<string, number>;
+  const buckets = new Map<string, { current: DayMap; previous: DayMap }>();
+  for (const id of defIds) {
+    buckets.set(id, { current: new Map(), previous: new Map() });
+  }
+
+  for (const entry of entries) {
+    const bucket = buckets.get(entry.metricDefinitionId);
+    const def = defById.get(entry.metricDefinitionId);
+    if (!bucket || !def) continue;
+    const dayMap = entry.loggedAt < weekStart ? bucket.previous : bucket.current;
+    const dayKey = entry.loggedAt.toISOString().slice(0, 10);
+    const value = Number(entry.value);
+    if (LAST_READING_KEYS.has(def.key)) {
+      // entries are ordered ascending, so the last write wins for the day
+      dayMap.set(dayKey, value);
+    } else {
+      dayMap.set(dayKey, (dayMap.get(dayKey) ?? 0) + value);
+    }
+  }
+
+  const averageOf = (dayMap: DayMap): number | null => {
+    if (dayMap.size === 0) return null;
+    let sum = 0;
+    for (const value of dayMap.values()) sum += value;
+    return sum / dayMap.size;
+  };
+
+  for (const def of definitions) {
+    const bucket = buckets.get(def.id)!;
+    result.set(def.key, {
+      definition: def,
+      isTracked: trackedIds.has(def.id),
+      currentAverage: averageOf(bucket.current),
+      previousAverage: averageOf(bucket.previous),
+    });
+  }
+
+  return result;
 }
 
 function StatCard({
@@ -326,20 +355,14 @@ export default async function DashboardPage() {
   const db = getDb();
 
   const [
-    caloriesData,
-    stepsData,
-    weightData,
-    sleepData,
+    weeklyStats,
     latestWeight,
     profile,
     recentSessions,
     weekSessions,
     activeSessionId,
   ] = await Promise.all([
-    getWeeklyStatData(db, userId, "calories"),
-    getWeeklyStatData(db, userId, "steps"),
-    getWeeklyStatData(db, userId, "weight", "last"),
-    getWeeklyStatData(db, userId, "sleep_hours"),
+    getWeeklyStats(db, userId, ["calories", "steps", "weight", "sleep_hours"]),
     db
       .select({ value: metricEntries.value })
       .from(metricEntries)
@@ -378,6 +401,11 @@ export default async function DashboardPage() {
       ),
     getActiveSessionId(userId),
   ]);
+
+  const caloriesData = weeklyStats.get("calories")!;
+  const stepsData = weeklyStats.get("steps")!;
+  const weightData = weeklyStats.get("weight")!;
+  const sleepData = weeklyStats.get("sleep_hours")!;
 
   const lastSession = recentSessions[0] ?? null;
   const sessionsThisWeek = weekSessions.length;

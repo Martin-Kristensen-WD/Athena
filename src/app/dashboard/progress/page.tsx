@@ -23,13 +23,15 @@ import { entryDayKey } from "@/lib/date";
 import { PHOTO_VIEW_LABELS } from "@/app/dashboard/measurements/constants";
 import { parseRangeParam, rangeStart } from "./range";
 import { RangeSelector } from "./range-selector";
-import { TrendChart } from "./trend-chart";
 import { DeltaBadge } from "./delta-badge";
-import { MeasurementsChart } from "./measurements-chart";
 import { PhotoCompareSlider } from "./photo-compare-slider";
 import { getStrengthData } from "./strength-queries";
-import { VolumeChart } from "./volume-chart";
-import { ExerciseStrength } from "./exercise-strength";
+import {
+  TrendChart,
+  MeasurementsChart,
+  VolumeChart,
+  ExerciseStrength,
+} from "./charts";
 
 function formatDate(dateStr: string) {
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString("da-DK", {
