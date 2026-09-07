@@ -43,7 +43,7 @@ export function QuickAddFab() {
         />
       )}
 
-      <div className="fixed right-6 bottom-6 z-50 flex flex-col items-end gap-3">
+      <div className="fixed right-6 bottom-24 z-50 flex flex-col items-end gap-3 md:bottom-6">
         {QUICK_ADD_ITEMS.map((item, index) => {
           const Icon = item.icon;
           return (

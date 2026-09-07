@@ -61,11 +61,28 @@ export default async function ProgressPage({
       .from(metricDefinitions)
       .where(eq(metricDefinitions.key, "weight")),
     db
-      .select({ weightUnit: profiles.weightUnit })
+      .select({
+        weightUnit: profiles.weightUnit,
+        goalTargetValue: profiles.goalTargetValue,
+        milestoneTargetValue: profiles.milestoneTargetValue,
+      })
       .from(profiles)
       .where(eq(profiles.userId, userId)),
   ]);
   const weightUnit = profileRow[0]?.weightUnit ?? "kg";
+  const weightReferenceLines: { value: number; label: string }[] = [];
+  if (profileRow[0]?.milestoneTargetValue != null) {
+    weightReferenceLines.push({
+      value: Number(profileRow[0].milestoneTargetValue),
+      label: "Delmål",
+    });
+  }
+  if (profileRow[0]?.goalTargetValue != null) {
+    weightReferenceLines.push({
+      value: Number(profileRow[0].goalTargetValue),
+      label: "Slutmål",
+    });
+  }
   const directExercise = alias(exercises, "direct_exercise");
 
   const [weightRows, measurementRows, photoRows, setRows, strengthData] =
@@ -238,7 +255,11 @@ export default async function ProgressPage({
           <RangeSelector active={range} />
         </CardHeader>
         <CardContent>
-          <TrendChart data={weightSeries} />
+          <TrendChart
+            data={weightSeries}
+            referenceLines={weightReferenceLines}
+            movingAverageWindow={7}
+          />
         </CardContent>
       </Card>
 

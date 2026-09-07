@@ -28,7 +28,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -40,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { QuickAddFab } from "@/components/quick-add-fab";
+import { MobileNav } from "@/components/mobile-nav";
 import { Logo } from "@/components/logo";
 
 const NAV_ITEMS = [
@@ -206,16 +206,19 @@ export function DashboardShell({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="m-2 md:ml-0 rounded-2xl bg-card shadow-[0_1px_2px_rgba(20,20,18,0.05)] ring-1 ring-border">
-        <header className="flex items-center border-b border-border px-4 py-2.5 md:hidden">
-          <SidebarTrigger />
+        <header className="flex items-center justify-center border-b border-border px-4 py-2.5 md:hidden">
+          <Link href="/dashboard" aria-label="Dashboard">
+            <Logo className="h-6 w-auto" priority />
+          </Link>
         </header>
         <div
           key={pathname}
-          className="animate-in fade-in slide-in-from-bottom-2 flex-1 overflow-y-auto p-6 duration-500 md:p-8"
+          className="animate-in fade-in slide-in-from-bottom-2 flex-1 overflow-y-auto p-6 pb-24 duration-500 md:p-8 md:pb-8"
         >
           {children}
         </div>
       </SidebarInset>
+      <MobileNav navItems={navItems} user={user} />
       <QuickAddFab />
     </SidebarProvider>
   );
