@@ -27,6 +27,9 @@ import { TrendChart } from "./trend-chart";
 import { DeltaBadge } from "./delta-badge";
 import { MeasurementsChart } from "./measurements-chart";
 import { PhotoCompareSlider } from "./photo-compare-slider";
+import { getStrengthData } from "./strength-queries";
+import { VolumeChart } from "./volume-chart";
+import { ExerciseStrength } from "./exercise-strength";
 
 function formatDate(dateStr: string) {
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString("da-DK", {
@@ -65,7 +68,8 @@ export default async function ProgressPage({
   const weightUnit = profileRow[0]?.weightUnit ?? "kg";
   const directExercise = alias(exercises, "direct_exercise");
 
-  const [weightRows, measurementRows, photoRows, setRows] = await Promise.all([
+  const [weightRows, measurementRows, photoRows, setRows, strengthData] =
+    await Promise.all([
     weightDefinition[0]
       ? db
           .select({ value: metricEntries.value, loggedAt: metricEntries.loggedAt })
@@ -118,6 +122,7 @@ export default async function ProgressPage({
       .leftJoin(directExercise, eq(directExercise.id, workoutSessionSets.exerciseId))
       .where(eq(workoutSessions.userId, userId))
       .orderBy(asc(workoutSessions.startedAt)),
+    getStrengthData(userId, weightWindowStart),
   ]);
 
   // Weight trend
@@ -336,6 +341,25 @@ export default async function ProgressPage({
               })}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-wrap items-center justify-between gap-3 space-y-0">
+          <CardTitle>Træningsvolumen</CardTitle>
+          <RangeSelector active={range} />
+        </CardHeader>
+        <CardContent>
+          <VolumeChart data={strengthData.volume} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Styrke pr. øvelse</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ExerciseStrength exercises={strengthData.exercises} />
         </CardContent>
       </Card>
     </div>

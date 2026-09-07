@@ -14,9 +14,18 @@ import {
   workoutSessionSets,
 } from "@/db/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatDuration } from "@/lib/date";
+import { round1, setOneRepMax } from "@/lib/strength";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getSessionPersonalRecords, type SessionPr } from "@/app/dashboard/progress/strength-queries";
 import { DeleteSessionDialog } from "./delete-session-dialog";
+
+function prTitle(kind: SessionPr["kind"]) {
+  if (kind === "both") return "Ny rekord i både estimeret 1RM og vægt";
+  if (kind === "weight") return "Ny rekord i vægt";
+  return "Ny rekord i estimeret 1RM";
+}
 
 export default async function SessionDetailPage(
   props: PageProps<"/dashboard/workouts/sessions/[sessionId]">
@@ -59,26 +68,33 @@ export default async function SessionDetailPage(
 
   const directExercise = alias(exercises, "direct_exercise");
 
-  const setRows = await db
-    .select({
-      id: workoutSessionSets.id,
-      programmeExerciseId: workoutSessionSets.programmeExerciseId,
-      exerciseId: workoutSessionSets.exerciseId,
-      setIndex: workoutSessionSets.setIndex,
-      reps: workoutSessionSets.reps,
-      weight: workoutSessionSets.weight,
-      programmeExerciseName: exercises.name,
-      directExerciseName: directExercise.name,
-    })
-    .from(workoutSessionSets)
-    .leftJoin(
-      programmeExercises,
-      eq(programmeExercises.id, workoutSessionSets.programmeExerciseId)
-    )
-    .leftJoin(exercises, eq(exercises.id, programmeExercises.exerciseId))
-    .leftJoin(directExercise, eq(directExercise.id, workoutSessionSets.exerciseId))
-    .where(eq(workoutSessionSets.sessionId, sessionId))
-    .orderBy(asc(workoutSessionSets.setIndex));
+  const [setRows, personalRecords] = await Promise.all([
+    db
+      .select({
+        id: workoutSessionSets.id,
+        programmeExerciseId: workoutSessionSets.programmeExerciseId,
+        exerciseId: workoutSessionSets.exerciseId,
+        setIndex: workoutSessionSets.setIndex,
+        reps: workoutSessionSets.reps,
+        weight: workoutSessionSets.weight,
+        programmeExerciseName: exercises.name,
+        directExerciseName: directExercise.name,
+      })
+      .from(workoutSessionSets)
+      .leftJoin(
+        programmeExercises,
+        eq(programmeExercises.id, workoutSessionSets.programmeExerciseId)
+      )
+      .leftJoin(exercises, eq(exercises.id, programmeExercises.exerciseId))
+      .leftJoin(
+        directExercise,
+        eq(directExercise.id, workoutSessionSets.exerciseId)
+      )
+      .where(eq(workoutSessionSets.sessionId, sessionId))
+      .orderBy(asc(workoutSessionSets.setIndex)),
+    getSessionPersonalRecords(session.user.id, sessionId),
+  ]);
+  const prByKey = personalRecords.byKey;
 
   const groups = new Map<
     string,
@@ -118,6 +134,14 @@ export default async function SessionDetailPage(
             {workoutSession.durationMinutes != null &&
               ` · ${formatDuration(workoutSession.durationMinutes)}`}
           </p>
+          {personalRecords.count > 0 && (
+            <Badge className="mt-2">
+              🎉{" "}
+              {personalRecords.count === 1
+                ? "1 ny rekord"
+                : `${personalRecords.count} nye rekorder`}
+            </Badge>
+          )}
         </div>
         <DeleteSessionDialog sessionId={workoutSession.id} />
       </div>
@@ -134,8 +158,8 @@ export default async function SessionDetailPage(
             Ingen sæt registreret for dette træningspas.
           </p>
         ) : (
-          Array.from(groups.values()).map((group, index) => (
-            <Card key={index}>
+          Array.from(groups.entries()).map(([key, group]) => (
+            <Card key={key}>
               <CardHeader>
                 <CardTitle className="text-base">{group.label}</CardTitle>
               </CardHeader>
@@ -146,16 +170,37 @@ export default async function SessionDetailPage(
                       <TableHead className="w-16">Sæt</TableHead>
                       <TableHead>Reps</TableHead>
                       <TableHead>Vægt</TableHead>
+                      <TableHead>Est. 1RM</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {group.sets.map((set) => (
-                      <TableRow key={set.setIndex}>
-                        <TableCell>{set.setIndex + 1}</TableCell>
-                        <TableCell>{set.reps ?? "—"}</TableCell>
-                        <TableCell>{set.weight ?? "—"}</TableCell>
-                      </TableRow>
-                    ))}
+                    {group.sets.map((set) => {
+                      const oneRm = setOneRepMax({
+                        weight: set.weight != null ? Number(set.weight) : null,
+                        reps: set.reps,
+                      });
+                      const pr = prByKey.get(`${key}:${set.setIndex}`);
+                      return (
+                        <TableRow key={set.setIndex}>
+                          <TableCell>{set.setIndex + 1}</TableCell>
+                          <TableCell>{set.reps ?? "—"}</TableCell>
+                          <TableCell>{set.weight ?? "—"}</TableCell>
+                          <TableCell className="tabular-nums">
+                            <span className="text-muted-foreground">
+                              {oneRm != null ? `${round1(oneRm)} kg` : "—"}
+                            </span>
+                            {pr && (
+                              <Badge
+                                className="ml-2 align-middle"
+                                title={prTitle(pr.kind)}
+                              >
+                                PR
+                              </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
