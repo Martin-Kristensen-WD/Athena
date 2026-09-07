@@ -60,6 +60,6 @@ export async function updateSettings(values: SettingsInput) {
   }
 
   revalidatePath("/dashboard/settings");
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   return { success: true as const };
 }

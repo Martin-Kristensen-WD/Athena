@@ -22,10 +22,26 @@ export default async function SettingsPage() {
   const userId = session.user.id;
   const db = getDb();
 
-  const metrics = await db
+  const allMetrics = await db
     .select()
     .from(metricDefinitions)
     .orderBy(asc(metricDefinitions.label));
+
+  // Fedtprocent has no logging surface, and protein/kulhydrat/fedt are folded
+  // into the "Macros" option shown under Kalorier, so keep them out of the list.
+  // Kalorier goes first, everything else stays alphabetical.
+  const HIDDEN_KEYS = new Set([
+    "body_fat_pct",
+    "protein",
+    "carbs",
+    "fat",
+  ]);
+  const metrics = [
+    ...allMetrics.filter((metric) => metric.key === "calories"),
+    ...allMetrics.filter(
+      (metric) => metric.key !== "calories" && !HIDDEN_KEYS.has(metric.key)
+    ),
+  ];
 
   const tracked = await db
     .select({ metricDefinitionId: userTrackedMetrics.metricDefinitionId })
@@ -33,8 +49,13 @@ export default async function SettingsPage() {
     .where(eq(userTrackedMetrics.userId, userId));
 
   const trackedIds = new Set(tracked.map((row) => row.metricDefinitionId));
-  const trackedKeys = metrics
-    .filter((metric) => trackedIds.has(metric.id))
+  // Derived from all metrics (except the fully retired Fedtprocent) so the
+  // "Macros" option can reflect protein/kulhydrat/fedt without clobbering them.
+  const trackedKeys = allMetrics
+    .filter(
+      (metric) =>
+        metric.key !== "body_fat_pct" && trackedIds.has(metric.id)
+    )
     .map((metric) => metric.key);
 
   const initialValues = {

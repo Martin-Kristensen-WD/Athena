@@ -53,6 +53,17 @@
   --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
   --animate-success-pop: success-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   --animate-check-draw: check-draw 0.4s ease-out 0.05s both;
+  --animate-shine: shine 3.2s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-260%) skewX(-12deg);
+  }
+  55%,
+  100% {
+    transform: translateX(420%) skewX(-12deg);
+  }
 }
 
 @keyframes pulse-soft {

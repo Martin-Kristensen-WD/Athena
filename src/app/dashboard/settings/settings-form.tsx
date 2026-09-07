@@ -28,6 +28,8 @@ import { updateSettings } from "./actions";
 
 type MetricDefinition = typeof metricDefinitionsTable.$inferSelect;
 
+const MACRO_KEYS = ["protein", "carbs", "fat"];
+
 export function SettingsForm({
   metrics,
   initialValues,
@@ -76,41 +78,102 @@ export function SettingsForm({
             <FormField
               control={form.control}
               name="trackedMetricKeys"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Hvad vil du spore?</FormLabel>
-                  <div className="grid gap-3">
-                    {metrics.map((metric) => {
-                      const checked = field.value?.includes(metric.key);
-                      return (
-                        <label
-                          key={metric.key}
-                          className="flex items-center gap-3 rounded-lg border border-border p-3"
-                        >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={(value) => {
-                              const current = field.value ?? [];
-                              field.onChange(
-                                value
-                                  ? [...current, metric.key]
-                                  : current.filter((key) => key !== metric.key)
-                              );
-                            }}
-                          />
-                          <span>
-                            <span className="block font-medium">{metric.label}</span>
-                            <span className="text-muted-foreground text-sm">
-                              Enhed: {metric.unit}
-                            </span>
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const current = field.value ?? [];
+                const caloriesOn = current.includes("calories");
+                const macrosOn = MACRO_KEYS.every((key) => current.includes(key));
+
+                const checkboxClass =
+                  "data-checked:border-button data-checked:bg-button data-checked:text-button-foreground dark:data-checked:bg-button";
+
+                function setKey(key: string, on: boolean) {
+                  field.onChange(
+                    on
+                      ? [...current.filter((k) => k !== key), key]
+                      : current.filter((k) => k !== key)
+                  );
+                }
+
+                function setCalories(on: boolean) {
+                  // Macros lives under Kalorier, so untracking Kalorier drops it too.
+                  field.onChange(
+                    on
+                      ? [...current, "calories"]
+                      : current.filter(
+                          (k) => k !== "calories" && !MACRO_KEYS.includes(k)
+                        )
+                  );
+                }
+
+                function setMacros(on: boolean) {
+                  field.onChange(
+                    on
+                      ? [
+                          ...current.filter((k) => !MACRO_KEYS.includes(k)),
+                          ...MACRO_KEYS,
+                        ]
+                      : current.filter((k) => !MACRO_KEYS.includes(k))
+                  );
+                }
+
+                return (
+                  <FormItem>
+                    <FormLabel>Hvad vil du tracke?</FormLabel>
+                    <div className="grid gap-3">
+                      {metrics.map((metric) => {
+                        const checked = current.includes(metric.key);
+                        return (
+                          <div
+                            key={metric.key}
+                            className="grid gap-3"
+                          >
+                            <label className="flex items-center gap-3 rounded-lg border border-border p-3">
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(value) => {
+                                  if (metric.key === "calories") {
+                                    setCalories(Boolean(value));
+                                  } else {
+                                    setKey(metric.key, Boolean(value));
+                                  }
+                                }}
+                                className={checkboxClass}
+                              />
+                              <span className="flex-1">
+                                <span className="block font-medium">
+                                  {metric.label}
+                                </span>
+                                <span className="text-muted-foreground text-sm">
+                                  Enhed: {metric.unit}
+                                </span>
+                              </span>
+                            </label>
+
+                            {metric.key === "calories" && caloriesOn && (
+                              <label className="ml-6 flex items-center gap-3 rounded-lg border border-border p-3">
+                                <Checkbox
+                                  checked={macrosOn}
+                                  onCheckedChange={(value) =>
+                                    setMacros(Boolean(value))
+                                  }
+                                  className={checkboxClass}
+                                />
+                                <span className="flex-1">
+                                  <span className="block font-medium">Macros</span>
+                                  <span className="text-muted-foreground text-sm">
+                                    Protein, kulhydrat og fedt
+                                  </span>
+                                </span>
+                              </label>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             {formError && <p className="text-destructive text-sm">{formError}</p>}

@@ -44,13 +44,33 @@ import { Logo } from "@/components/logo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/food", label: "Kost", icon: Flame },
-  { href: "/dashboard/steps", label: "Skridt", icon: Footprints },
-  { href: "/dashboard/weight", label: "Vægt", icon: Scale },
-  { href: "/dashboard/measurements", label: "Målinger", icon: Ruler },
-  { href: "/dashboard/sleep", label: "Søvn", icon: Moon },
+  {
+    href: "/dashboard/food",
+    label: "Kost",
+    icon: Flame,
+    metricKeys: ["calories", "protein", "carbs", "fat"],
+  },
+  {
+    href: "/dashboard/steps",
+    label: "Skridt",
+    icon: Footprints,
+    metricKeys: ["steps"],
+  },
   { href: "/dashboard/workouts", label: "Træning", icon: Dumbbell },
-];
+  {
+    href: "/dashboard/weight",
+    label: "Vægt",
+    icon: Scale,
+    metricKeys: ["weight"],
+  },
+  {
+    href: "/dashboard/sleep",
+    label: "Søvn",
+    icon: Moon,
+    metricKeys: ["sleep_hours"],
+  },
+  { href: "/dashboard/measurements", label: "Målinger", icon: Ruler },
+] as const;
 
 type DashboardUser = {
   name?: string | null;
@@ -77,7 +97,7 @@ function UserMenu({ user }: { user: DashboardUser }) {
         render={
           <button className="flex w-full items-center gap-2.5 rounded-xl p-2 text-left outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/50">
             <Avatar className="size-8 shrink-0 ring-1 ring-border">
-              <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">
+              <AvatarFallback className="bg-button text-xs font-semibold text-button-foreground">
                 {initials(user.name, user.email)}
               </AvatarFallback>
             </Avatar>
@@ -123,12 +143,21 @@ function UserMenu({ user }: { user: DashboardUser }) {
 
 export function DashboardShell({
   user,
+  trackedMetricKeys,
   children,
 }: {
   user: DashboardUser;
+  trackedMetricKeys?: string[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  const tracked = new Set(trackedMetricKeys ?? []);
+  const navItems = NAV_ITEMS.filter(
+    (item) =>
+      !("metricKeys" in item) ||
+      item.metricKeys.some((key) => tracked.has(key))
+  );
 
   return (
     <SidebarProvider>
@@ -140,7 +169,7 @@ export function DashboardShell({
         </SidebarHeader>
         <SidebarContent className="px-2 pt-2">
           <SidebarMenu className="gap-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const isActive =
                 item.href === "/dashboard"
                   ? pathname === "/dashboard"

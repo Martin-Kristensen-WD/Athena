@@ -30,7 +30,7 @@ export function DashboardViewToggle({ active }: { active: ViewKey }) {
   return (
     <div className="relative inline-flex rounded-full border border-border bg-muted p-1">
       <div
-        className="absolute inset-y-1 w-[calc(50%-0.25rem)] rounded-full bg-background shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        className="absolute inset-y-1 w-[calc(50%-0.25rem)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] dark:bg-white/10 dark:shadow-none dark:ring-1 dark:ring-white/10 dark:backdrop-blur-sm"
         style={{ transform: `translateX(${activeIndex * 100}%)` }}
         aria-hidden
       />

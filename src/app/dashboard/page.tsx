@@ -10,6 +10,7 @@ import {
   ArrowDown,
   ChevronRight,
   Minus,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,9 +35,28 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-function CardIcon({ icon: Icon }: { icon: LucideIcon }) {
+const CARD_TONES = {
+  calories:
+    "bg-orange-500/10 text-orange-600 dark:bg-orange-400/15 dark:text-orange-400",
+  steps: "bg-sky-500/10 text-sky-600 dark:bg-sky-400/15 dark:text-sky-400",
+  workouts:
+    "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-400",
+  weight:
+    "bg-violet-500/10 text-violet-600 dark:bg-violet-400/15 dark:text-violet-400",
+  sleep:
+    "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/15 dark:text-indigo-400",
+} as const;
+
+type CardTone = keyof typeof CARD_TONES;
+
+function CardIcon({ icon: Icon, tone }: { icon: LucideIcon; tone: CardTone }) {
   return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+    <span
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-xl",
+        CARD_TONES[tone]
+      )}
+    >
       <Icon className="size-4.5" />
     </span>
   );
@@ -190,6 +210,7 @@ function StatCard({
   href,
   title,
   icon,
+  tone,
   unit,
   data,
   sentimentFor,
@@ -197,6 +218,7 @@ function StatCard({
   href: string;
   title: string;
   icon: LucideIcon;
+  tone: CardTone;
   unit?: string;
   data: WeeklyStatData;
   sentimentFor?: (direction: Direction) => Sentiment;
@@ -211,7 +233,7 @@ function StatCard({
     return (
       <Card>
         <CardHeader className="flex items-center gap-3 space-y-0">
-          <CardIcon icon={icon} />
+          <CardIcon icon={icon} tone={tone} />
           <div>
             <CardTitle>{title}</CardTitle>
             <CardDescription>Ingen registreringer denne uge</CardDescription>
@@ -232,7 +254,7 @@ function StatCard({
     <Link href={href} className="group block">
       <Card className="transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
         <CardHeader className="flex items-center gap-3 space-y-0">
-          <CardIcon icon={icon} />
+          <CardIcon icon={icon} tone={tone} />
           <div className="min-w-0 flex-1">
             <CardTitle>{title}</CardTitle>
             <CardDescription>Dagligt gennemsnit denne uge</CardDescription>
@@ -367,6 +389,28 @@ export default async function DashboardPage() {
             {progressText ??
               "Registrer din vægt, og sæt et mål under opsætning for at følge din udvikling her."}
           </p>
+          {(milestoneTarget !== null || goalTarget !== null) && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+              {milestoneTarget !== null && (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Trophy className="size-4" />
+                  Delmål
+                  <span className="font-medium text-foreground tabular-nums">
+                    {milestoneTarget.toLocaleString("da-DK")} {weightUnit}
+                  </span>
+                </span>
+              )}
+              {goalTarget !== null && (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Trophy className="size-4 text-[#eab308]" />
+                  Slutmål
+                  <span className="font-medium text-foreground tabular-nums">
+                    {goalTarget.toLocaleString("da-DK")} {weightUnit}
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <DashboardViewToggle active="main" />
       </div>
@@ -376,6 +420,7 @@ export default async function DashboardPage() {
           href="/dashboard/food"
           title="Kalorieindtag"
           icon={Flame}
+          tone="calories"
           unit="kcal"
           data={caloriesData}
           sentimentFor={(direction) => {
@@ -393,6 +438,7 @@ export default async function DashboardPage() {
           href="/dashboard/steps"
           title="Skridt"
           icon={Footprints}
+          tone="steps"
           data={stepsData}
           sentimentFor={(direction) => {
             if (direction === "up") return "good";
@@ -404,6 +450,7 @@ export default async function DashboardPage() {
           href="/dashboard/weight"
           title="Vægt"
           icon={Scale}
+          tone="weight"
           unit={weightUnit}
           data={weightData}
           sentimentFor={(direction) => {
@@ -421,6 +468,7 @@ export default async function DashboardPage() {
           href="/dashboard/sleep"
           title="Søvn"
           icon={Moon}
+          tone="sleep"
           unit="timer"
           data={sleepData}
         />
@@ -428,7 +476,7 @@ export default async function DashboardPage() {
         <Link href="/dashboard/workouts" className="group block">
           <Card className="transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
             <CardHeader className="flex items-center gap-3 space-y-0">
-              <CardIcon icon={Dumbbell} />
+              <CardIcon icon={Dumbbell} tone="workouts" />
               <div className="min-w-0 flex-1">
                 <CardTitle>Træning</CardTitle>
                 <CardDescription className="truncate">

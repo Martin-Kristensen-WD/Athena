@@ -46,6 +46,7 @@ export function ActiveProgrammeToggle({
         checked={active}
         disabled={isPending}
         onCheckedChange={onCheckedChange}
+        className="data-checked:bg-success dark:data-checked:bg-success"
       />
     </div>
   );

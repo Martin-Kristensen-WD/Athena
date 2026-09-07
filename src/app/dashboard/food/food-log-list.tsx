@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -32,6 +33,8 @@ export type FoodDayRow = {
   carbs: number;
   fat: number;
 };
+
+const PREVIEW_COUNT = 15;
 
 function DeleteDayButton({ date }: { date: string }) {
   const router = useRouter();
@@ -83,6 +86,8 @@ function DeleteDayButton({ date }: { date: string }) {
 }
 
 export function FoodLogList({ rows }: { rows: FoodDayRow[] }) {
+  const [showAll, setShowAll] = useState(false);
+
   if (rows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
@@ -91,20 +96,23 @@ export function FoodLogList({ rows }: { rows: FoodDayRow[] }) {
     );
   }
 
+  const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Dato</TableHead>
-          <TableHead>Kcal</TableHead>
-          <TableHead>Protein</TableHead>
-          <TableHead>Kulhydrater</TableHead>
-          <TableHead>Fedt</TableHead>
-          <TableHead className="w-10" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row, index) => (
+    <div className="grid gap-3">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Dato</TableHead>
+            <TableHead>Kcal</TableHead>
+            <TableHead>Protein</TableHead>
+            <TableHead>Kulhydrater</TableHead>
+            <TableHead>Fedt</TableHead>
+            <TableHead className="w-10" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {visibleRows.map((row, index) => (
           <TableRow
             key={row.date}
             className="animate-in fade-in-0 slide-in-from-bottom-1 duration-300"
@@ -136,8 +144,28 @@ export function FoodLogList({ rows }: { rows: FoodDayRow[] }) {
               <DeleteDayButton date={row.date} />
             </TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+          ))}
+        </TableBody>
+      </Table>
+      {rows.length > PREVIEW_COUNT && (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAll((value) => !value)}
+          >
+            {showAll ? (
+              <>
+                <ChevronUp /> Vis færre
+              </>
+            ) : (
+              <>
+                <ChevronDown /> Vis alle {rows.length} for måneden
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

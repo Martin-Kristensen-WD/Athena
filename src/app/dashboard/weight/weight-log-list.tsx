@@ -1,8 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -29,6 +30,8 @@ export type WeightDayRow = {
   date: string;
   weight: number;
 };
+
+const PREVIEW_COUNT = 15;
 
 function DeleteDayButton({ date }: { date: string }) {
   const router = useRouter();
@@ -86,6 +89,8 @@ export function WeightLogList({
   rows: WeightDayRow[];
   weightUnit: string;
 }) {
+  const [showAll, setShowAll] = useState(false);
+
   if (rows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm">
@@ -94,34 +99,57 @@ export function WeightLogList({
     );
   }
 
+  const visibleRows = showAll ? rows : rows.slice(0, PREVIEW_COUNT);
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Dato</TableHead>
-          <TableHead>Vægt</TableHead>
-          <TableHead className="w-10" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((row) => (
-          <TableRow key={row.date}>
-            <TableCell>
-              {new Date(`${row.date}T00:00:00`).toLocaleDateString("da-DK", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </TableCell>
-            <TableCell className="font-mono tabular-nums">
-              {row.weight.toLocaleString("da-DK")} {weightUnit}
-            </TableCell>
-            <TableCell>
-              <DeleteDayButton date={row.date} />
-            </TableCell>
+    <div className="grid gap-3">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Dato</TableHead>
+            <TableHead>Vægt</TableHead>
+            <TableHead className="w-10" />
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {visibleRows.map((row) => (
+            <TableRow key={row.date}>
+              <TableCell>
+                {new Date(`${row.date}T00:00:00`).toLocaleDateString("da-DK", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </TableCell>
+              <TableCell className="font-mono tabular-nums">
+                {row.weight.toLocaleString("da-DK")} {weightUnit}
+              </TableCell>
+              <TableCell>
+                <DeleteDayButton date={row.date} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {rows.length > PREVIEW_COUNT && (
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAll((value) => !value)}
+          >
+            {showAll ? (
+              <>
+                <ChevronUp /> Vis færre
+              </>
+            ) : (
+              <>
+                <ChevronDown /> Vis alle {rows.length} for måneden
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
