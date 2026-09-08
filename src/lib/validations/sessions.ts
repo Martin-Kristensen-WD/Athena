@@ -94,6 +94,9 @@ export const saveSessionSetSchema = z.object({
   weight: optionalCoercedNumber(
     z.coerce.number().nonnegative("Indtast en gyldig vægt")
   ),
+  rir: optionalCoercedNumber(
+    z.coerce.number().int().min(0, "Indtast et gyldigt RIR").max(20, "RIR er for højt")
+  ),
   done: z.boolean(),
 });
 
@@ -119,6 +122,18 @@ export const removeSessionExerciseSchema = z.object({
   ref: exerciseRefSchema,
 });
 
+export const swapSessionExerciseSchema = z.object({
+  sessionId: z.string().uuid(),
+  ref: exerciseRefSchema,
+  exerciseId: z.string().uuid("Vælg en øvelse"),
+});
+
+export const saveSessionExerciseNoteSchema = z.object({
+  sessionId: z.string().uuid(),
+  ref: exerciseRefSchema,
+  note: z.string().max(2000),
+});
+
 export const finishSessionSchema = z.object({
   sessionId: z.string().uuid(),
   durationMinutes: optionalCoercedNumber(
@@ -139,6 +154,12 @@ export type RemoveSessionSetInput = z.infer<typeof removeSessionSetSchema>;
 export type AddSessionExerciseInput = z.infer<typeof addSessionExerciseSchema>;
 export type RemoveSessionExerciseInput = z.infer<
   typeof removeSessionExerciseSchema
+>;
+export type SwapSessionExerciseInput = z.infer<
+  typeof swapSessionExerciseSchema
+>;
+export type SaveSessionExerciseNoteInput = z.infer<
+  typeof saveSessionExerciseNoteSchema
 >;
 export type FinishSessionInput = z.infer<typeof finishSessionSchema>;
 export type DiscardSessionInput = z.infer<typeof discardSessionSchema>;

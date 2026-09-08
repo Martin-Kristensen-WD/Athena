@@ -11,10 +11,12 @@ export function StartSessionButton({
   input,
   children,
   className,
+  disabled,
 }: {
   input: StartSessionInput;
   children?: React.ReactNode;
   className?: string;
+  disabled?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -23,7 +25,7 @@ export function StartSessionButton({
     <Button
       type="button"
       className={className}
-      disabled={pending}
+      disabled={disabled || pending}
       onClick={() =>
         start(async () => {
           const result = await startWorkoutSession(input);

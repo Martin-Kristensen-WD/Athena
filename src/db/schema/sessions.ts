@@ -74,6 +74,8 @@ export const workoutSessionSets = pgTable(
     setIndex: integer("set_index").notNull(),
     reps: integer("reps"),
     weight: numeric("weight"),
+    // Reps in reserve logged for the set (0 = to failure). Null until entered.
+    rir: integer("rir"),
     // Null while a live-session set is still just planned; stamped when the
     // user marks the set done (this is what triggers the rest timer).
     completedAt: timestamp("completed_at"),
@@ -81,5 +83,31 @@ export const workoutSessionSets = pgTable(
   },
   (table) => [
     index("workout_session_sets_session_idx").on(table.sessionId),
+  ]
+);
+
+// A free-text note the user attaches to one exercise for the duration of a
+// single session — jotted mid-workout, surfaced again on the session recap.
+// Hangs off the same programmeExercise / exercise ref split as the sets.
+export const workoutSessionExerciseNotes = pgTable(
+  "workout_session_exercise_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => workoutSessions.id, { onDelete: "cascade" }),
+    programmeExerciseId: uuid("programme_exercise_id").references(
+      () => programmeExercises.id,
+      { onDelete: "cascade" }
+    ),
+    exerciseId: uuid("exercise_id").references(() => exercises.id, {
+      onDelete: "cascade",
+    }),
+    note: text("note").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("workout_session_exercise_notes_session_idx").on(table.sessionId),
   ]
 );

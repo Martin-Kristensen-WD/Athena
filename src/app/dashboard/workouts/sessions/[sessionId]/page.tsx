@@ -11,6 +11,7 @@ import {
   programmeExercises,
   programmes,
   workoutSessions,
+  workoutSessionExerciseNotes,
   workoutSessionSets,
 } from "@/db/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,7 +69,7 @@ export default async function SessionDetailPage(
 
   const directExercise = alias(exercises, "direct_exercise");
 
-  const [setRows, personalRecords] = await Promise.all([
+  const [setRows, personalRecords, noteRows] = await Promise.all([
     db
       .select({
         id: workoutSessionSets.id,
@@ -77,6 +78,7 @@ export default async function SessionDetailPage(
         setIndex: workoutSessionSets.setIndex,
         reps: workoutSessionSets.reps,
         weight: workoutSessionSets.weight,
+        rir: workoutSessionSets.rir,
         programmeExerciseName: exercises.name,
         directExerciseName: directExercise.name,
       })
@@ -93,25 +95,56 @@ export default async function SessionDetailPage(
       .where(eq(workoutSessionSets.sessionId, sessionId))
       .orderBy(asc(workoutSessionSets.setIndex)),
     getSessionPersonalRecords(session.user.id, sessionId),
+    db
+      .select({
+        programmeExerciseId: workoutSessionExerciseNotes.programmeExerciseId,
+        exerciseId: workoutSessionExerciseNotes.exerciseId,
+        note: workoutSessionExerciseNotes.note,
+      })
+      .from(workoutSessionExerciseNotes)
+      .where(eq(workoutSessionExerciseNotes.sessionId, sessionId)),
   ]);
   const prByKey = personalRecords.byKey;
 
+  const noteByKey = new Map<string, string>();
+  for (const row of noteRows) {
+    const key = row.programmeExerciseId ?? row.exerciseId;
+    if (key) noteByKey.set(key, row.note);
+  }
+
   const groups = new Map<
     string,
-    { label: string; sets: { setIndex: number; reps: number | null; weight: string | null }[] }
+    {
+      label: string;
+      note: string | null;
+      sets: {
+        setIndex: number;
+        reps: number | null;
+        weight: string | null;
+        rir: number | null;
+      }[];
+    }
   >();
   for (const row of setRows) {
     const key = row.programmeExerciseId ?? row.exerciseId ?? `unlinked-${row.id}`;
     const existing = groups.get(key);
     if (existing) {
-      existing.sets.push({ setIndex: row.setIndex, reps: row.reps, weight: row.weight });
+      existing.sets.push({
+        setIndex: row.setIndex,
+        reps: row.reps,
+        weight: row.weight,
+        rir: row.rir,
+      });
     } else {
       groups.set(key, {
         label:
           row.programmeExerciseName ??
           row.directExerciseName ??
           "Øvelse fjernet fra program",
-        sets: [{ setIndex: row.setIndex, reps: row.reps, weight: row.weight }],
+        note: noteByKey.get(key) ?? null,
+        sets: [
+          { setIndex: row.setIndex, reps: row.reps, weight: row.weight, rir: row.rir },
+        ],
       });
     }
   }
@@ -162,6 +195,9 @@ export default async function SessionDetailPage(
             <Card key={key}>
               <CardHeader>
                 <CardTitle className="text-base">{group.label}</CardTitle>
+                {group.note && (
+                  <p className="text-muted-foreground text-sm">{group.note}</p>
+                )}
               </CardHeader>
               <CardContent>
                 <Table>
@@ -170,6 +206,7 @@ export default async function SessionDetailPage(
                       <TableHead className="w-16">Sæt</TableHead>
                       <TableHead>Reps</TableHead>
                       <TableHead>Vægt</TableHead>
+                      <TableHead>RIR</TableHead>
                       <TableHead>Est. 1RM</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -185,6 +222,7 @@ export default async function SessionDetailPage(
                           <TableCell>{set.setIndex + 1}</TableCell>
                           <TableCell>{set.reps ?? "—"}</TableCell>
                           <TableCell>{set.weight ?? "—"}</TableCell>
+                          <TableCell>{set.rir ?? "—"}</TableCell>
                           <TableCell className="tabular-nums">
                             <span className="text-muted-foreground">
                               {oneRm != null ? `${round1(oneRm)} kg` : "—"}

@@ -2,6 +2,7 @@
 
 import { randomUUID } from "crypto";
 import { and, asc, eq, isNull, or } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
@@ -12,6 +13,7 @@ import {
   programmeDays,
   programmeExercises,
   workoutSessions,
+  workoutSessionExerciseNotes,
   workoutSessionSets,
 } from "@/db/schema";
 import {
@@ -22,8 +24,10 @@ import {
   freeWorkoutSessionSchema,
   removeSessionExerciseSchema,
   removeSessionSetSchema,
+  saveSessionExerciseNoteSchema,
   saveSessionSetSchema,
   startSessionSchema,
+  swapSessionExerciseSchema,
   workoutSessionSchema,
   type AddSessionExerciseInput,
   type AddSessionSetInput,
@@ -33,8 +37,10 @@ import {
   type FreeWorkoutSessionInput,
   type RemoveSessionExerciseInput,
   type RemoveSessionSetInput,
+  type SaveSessionExerciseNoteInput,
   type SaveSessionSetInput,
   type StartSessionInput,
+  type SwapSessionExerciseInput,
   type WorkoutSessionInput,
 } from "@/lib/validations/sessions";
 import { getActiveSessionId } from "./live-queries";
@@ -198,6 +204,16 @@ function refColumns(ref: ExerciseRef) {
   };
 }
 
+/** Drizzle condition matching rows (sets or notes) hung off `ref`. */
+function refMatch(
+  columns: { programmeExerciseId: AnyPgColumn; exerciseId: AnyPgColumn },
+  ref: ExerciseRef
+) {
+  return ref.kind === "programme"
+    ? eq(columns.programmeExerciseId, ref.programmeExerciseId)
+    : eq(columns.exerciseId, ref.exerciseId);
+}
+
 /** Loads a session and confirms it is the caller's and still in progress. */
 async function loadOwnedActiveSession(userId: string, sessionId: string) {
   const [row] = await getDb()
@@ -310,7 +326,8 @@ export async function saveSessionSet(input: SaveSessionSetInput) {
   if (!parsed.success) {
     return { error: "Ugyldigt sæt." };
   }
-  const { sessionId, setId, ref, setIndex, reps, weight, done } = parsed.data;
+  const { sessionId, setId, ref, setIndex, reps, weight, rir, done } =
+    parsed.data;
 
   const active = await loadOwnedActiveSession(session.user.id, sessionId);
   if (!active) {
@@ -319,6 +336,7 @@ export async function saveSessionSet(input: SaveSessionSetInput) {
 
   const repsValue = reps ?? null;
   const weightValue = weight !== undefined ? weight.toString() : null;
+  const rirValue = rir ?? null;
   const completedAt = done ? new Date() : null;
 
   await getDb()
@@ -329,6 +347,7 @@ export async function saveSessionSet(input: SaveSessionSetInput) {
       setIndex,
       reps: repsValue,
       weight: weightValue,
+      rir: rirValue,
       completedAt,
       ...refColumns(ref),
     })
@@ -338,6 +357,7 @@ export async function saveSessionSet(input: SaveSessionSetInput) {
         setIndex,
         reps: repsValue,
         weight: weightValue,
+        rir: rirValue,
         completedAt,
       },
     });
@@ -459,16 +479,141 @@ export async function removeSessionExercise(input: RemoveSessionExerciseInput) {
     return { error: "Træningspasset blev ikke fundet." };
   }
 
-  const refCondition =
-    ref.kind === "programme"
-      ? eq(workoutSessionSets.programmeExerciseId, ref.programmeExerciseId)
-      : eq(workoutSessionSets.exerciseId, ref.exerciseId);
-
   await getDb()
     .delete(workoutSessionSets)
-    .where(and(eq(workoutSessionSets.sessionId, sessionId), refCondition));
+    .where(
+      and(
+        eq(workoutSessionSets.sessionId, sessionId),
+        refMatch(workoutSessionSets, ref)
+      )
+    );
 
   return { success: true as const };
+}
+
+export async function swapSessionExercise(input: SwapSessionExerciseInput) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Du skal være logget ind." };
+  }
+
+  const parsed = swapSessionExerciseSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Kunne ikke bytte øvelsen." };
+  }
+  const { sessionId, ref, exerciseId } = parsed.data;
+
+  const active = await loadOwnedActiveSession(session.user.id, sessionId);
+  if (!active) {
+    return { error: "Træningspasset blev ikke fundet." };
+  }
+
+  const [exercise] = await getDb()
+    .select({
+      id: exercises.id,
+      name: exercises.name,
+      muscleGroup: exercises.muscleGroup,
+      equipment: exercises.equipment,
+      notes: exercises.notes,
+    })
+    .from(exercises)
+    .where(
+      and(
+        eq(exercises.id, exerciseId),
+        or(eq(exercises.userId, session.user.id), eq(exercises.isSystem, true))
+      )
+    )
+    .limit(1);
+  if (!exercise) {
+    return { error: "Øvelsen blev ikke fundet." };
+  }
+
+  const db = getTransactionalDb();
+  await db.transaction(async (tx) => {
+    // Re-point this slot's sets at the chosen exercise for this session only;
+    // the programme link (and its planned target) is dropped for the slot.
+    await tx
+      .update(workoutSessionSets)
+      .set({ programmeExerciseId: null, exerciseId })
+      .where(
+        and(
+          eq(workoutSessionSets.sessionId, sessionId),
+          refMatch(workoutSessionSets, ref)
+        )
+      );
+
+    // Carry any exercise note across to the new ref.
+    await tx
+      .update(workoutSessionExerciseNotes)
+      .set({
+        programmeExerciseId: null,
+        exerciseId,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(workoutSessionExerciseNotes.sessionId, sessionId),
+          refMatch(workoutSessionExerciseNotes, ref)
+        )
+      );
+  });
+
+  return { success: true as const, exercise };
+}
+
+export async function saveSessionExerciseNote(
+  input: SaveSessionExerciseNoteInput
+) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Du skal være logget ind." };
+  }
+
+  const parsed = saveSessionExerciseNoteSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: "Kunne ikke gemme noten." };
+  }
+  const { sessionId, ref, note } = parsed.data;
+
+  const active = await loadOwnedActiveSession(session.user.id, sessionId);
+  if (!active) {
+    return { error: "Træningspasset blev ikke fundet." };
+  }
+
+  const trimmed = note.trim();
+  const db = getDb();
+  const refCondition = and(
+    eq(workoutSessionExerciseNotes.sessionId, sessionId),
+    refMatch(workoutSessionExerciseNotes, ref)
+  );
+
+  const [existing] = await db
+    .select({ id: workoutSessionExerciseNotes.id })
+    .from(workoutSessionExerciseNotes)
+    .where(refCondition)
+    .limit(1);
+
+  if (!trimmed) {
+    if (existing) {
+      await db
+        .delete(workoutSessionExerciseNotes)
+        .where(eq(workoutSessionExerciseNotes.id, existing.id));
+    }
+    return { success: true as const, note: "" };
+  }
+
+  if (existing) {
+    await db
+      .update(workoutSessionExerciseNotes)
+      .set({ note: trimmed, updatedAt: new Date() })
+      .where(eq(workoutSessionExerciseNotes.id, existing.id));
+  } else {
+    await db
+      .insert(workoutSessionExerciseNotes)
+      .values({ sessionId, note: trimmed, ...refColumns(ref) });
+  }
+
+  return { success: true as const, note: trimmed };
 }
 
 export async function finishWorkoutSession(input: FinishSessionInput) {
@@ -507,6 +652,7 @@ export async function finishWorkoutSession(input: FinishSessionInput) {
           eq(workoutSessionSets.sessionId, sessionId),
           isNull(workoutSessionSets.reps),
           isNull(workoutSessionSets.weight),
+          isNull(workoutSessionSets.rir),
           isNull(workoutSessionSets.completedAt)
         )
       );

@@ -7,6 +7,7 @@ import {
   programmeExercises,
   programmes,
   workoutSessions,
+  workoutSessionExerciseNotes,
   workoutSessionSets,
 } from "@/db/schema";
 
@@ -23,6 +24,7 @@ export type LiveSet = {
   setIndex: number;
   reps: number | null;
   weight: string | null;
+  rir: number | null;
   done: boolean;
 };
 
@@ -34,6 +36,11 @@ export type LiveExercise = {
   exerciseId: string;
   name: string;
   muscleGroup: string;
+  equipment: string | null;
+  /** The exercise's own coaching notes (setup / cues), shown in the info sheet. */
+  coachNotes: string | null;
+  /** A note the user attached to this exercise for this session only. */
+  note: string | null;
   order: number;
   target: {
     sets: number;
@@ -185,6 +192,8 @@ export async function loadLiveSession(
           exerciseId: programmeExercises.exerciseId,
           name: exercises.name,
           muscleGroup: exercises.muscleGroup,
+          equipment: exercises.equipment,
+          coachNotes: exercises.notes,
           order: programmeExercises.orderIndex,
           sets: programmeExercises.sets,
           targetReps: programmeExercises.targetReps,
@@ -209,10 +218,13 @@ export async function loadLiveSession(
       setIndex: workoutSessionSets.setIndex,
       reps: workoutSessionSets.reps,
       weight: workoutSessionSets.weight,
+      rir: workoutSessionSets.rir,
       completedAt: workoutSessionSets.completedAt,
       createdAt: workoutSessionSets.createdAt,
       directName: directExercise.name,
       directMuscleGroup: directExercise.muscleGroup,
+      directEquipment: directExercise.equipment,
+      directCoachNotes: directExercise.notes,
     })
     .from(workoutSessionSets)
     .leftJoin(
@@ -231,6 +243,9 @@ export async function loadLiveSession(
       exerciseId: p.exerciseId,
       name: p.name,
       muscleGroup: p.muscleGroup,
+      equipment: p.equipment,
+      coachNotes: p.coachNotes,
+      note: null,
       order: p.order,
       target: {
         sets: p.sets,
@@ -265,6 +280,9 @@ export async function loadLiveSession(
         exerciseId: row.exerciseId ?? "",
         name: row.directName ?? "Øvelse",
         muscleGroup: row.directMuscleGroup ?? "other",
+        equipment: row.directEquipment ?? null,
+        coachNotes: row.directCoachNotes ?? null,
+        note: null,
         order: extraOrder++,
         target: null,
         last: null,
@@ -278,11 +296,19 @@ export async function loadLiveSession(
       setIndex: row.setIndex,
       reps: row.reps,
       weight: row.weight,
+      rir: row.rir,
       done: row.completedAt !== null,
     });
   }
 
-  const list = [...groups.values()].sort((a, b) => a.order - b.order);
+  // A planned programme slot always has its sets pre-created at start; if it has
+  // none now it was either cleared or swapped away (its sets moved to a direct
+  // exercise group), so drop the empty shell.
+  const list = [...groups.values()]
+    .filter(
+      (group) => group.ref.kind !== "programme" || group.sets.length > 0
+    )
+    .sort((a, b) => a.order - b.order);
   for (const group of list) {
     group.sets.sort((a, b) => a.setIndex - b.setIndex);
   }
@@ -296,6 +322,24 @@ export async function loadLiveSession(
       ? lastByExercise.get(group.exerciseId)
       : undefined;
     if (last) group.last = last;
+  }
+
+  const noteRows = await db
+    .select({
+      programmeExerciseId: workoutSessionExerciseNotes.programmeExerciseId,
+      exerciseId: workoutSessionExerciseNotes.exerciseId,
+      note: workoutSessionExerciseNotes.note,
+    })
+    .from(workoutSessionExerciseNotes)
+    .where(eq(workoutSessionExerciseNotes.sessionId, sessionId));
+  const noteByKey = new Map<string, string>();
+  for (const row of noteRows) {
+    const key = row.programmeExerciseId ?? row.exerciseId;
+    if (key) noteByKey.set(key, row.note);
+  }
+  for (const group of list) {
+    const note = noteByKey.get(group.key);
+    if (note) group.note = note;
   }
 
   return {

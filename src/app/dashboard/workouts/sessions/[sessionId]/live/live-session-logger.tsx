@@ -3,11 +3,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeftRight,
+  Check,
+  Info,
+  Loader2,
+  Minus,
+  NotebookPen,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
@@ -40,7 +49,9 @@ import {
   finishWorkoutSession,
   removeSessionExercise,
   removeSessionSet,
+  saveSessionExerciseNote,
   saveSessionSet,
+  swapSessionExercise,
 } from "../../actions";
 import { RestTimer } from "./rest-timer";
 
@@ -49,6 +60,7 @@ type SetRow = {
   setIndex: number;
   reps: string;
   weight: string;
+  rir: string;
   done: boolean;
 };
 
@@ -58,6 +70,9 @@ type Group = {
   exerciseId: string;
   name: string;
   muscleGroup: string;
+  equipment: string | null;
+  coachNotes: string | null;
+  note: string | null;
   target: LiveSession["exercises"][number]["target"];
   last: LiveSession["exercises"][number]["last"];
   sets: SetRow[];
@@ -70,6 +85,9 @@ function toGroups(session: LiveSession): Group[] {
     exerciseId: exercise.exerciseId,
     name: exercise.name,
     muscleGroup: exercise.muscleGroup,
+    equipment: exercise.equipment,
+    coachNotes: exercise.coachNotes,
+    note: exercise.note,
     target: exercise.target,
     last: exercise.last,
     sets: exercise.sets.map((set) => ({
@@ -77,6 +95,7 @@ function toGroups(session: LiveSession): Group[] {
       setIndex: set.setIndex,
       reps: set.reps?.toString() ?? "",
       weight: set.weight ?? "",
+      rir: set.rir?.toString() ?? "",
       done: set.done,
     })),
   }));
@@ -103,6 +122,24 @@ function formatMuscleGroup(value: string) {
   return value.replace(/_/g, " ");
 }
 
+function initials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
+function targetLine(group: Group, position: number, total: number) {
+  const prefix = `Øvelse ${position} af ${total}`;
+  if (group.target) {
+    const weight = group.target.weight ? ` @ ${group.target.weight}` : "";
+    return `${prefix} · Mål ${group.target.sets} × ${group.target.reps}${weight}`;
+  }
+  return `${prefix} · ${formatMuscleGroup(group.muscleGroup)}`;
+}
+
+type SheetState = { kind: "info" | "note"; key: string } | null;
+
 export function LiveSessionLogger({
   session,
   availableExercises,
@@ -126,11 +163,21 @@ export function LiveSessionLogger({
     Math.floor((Date.now() - session.startedAt.getTime()) / 1000)
   );
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [swapForKey, setSwapForKey] = useState<string | null>(null);
   const [exerciseOptions, setExerciseOptions] = useState(availableExercises);
   const [finishOpen, setFinishOpen] = useState(false);
   const [durationInput, setDurationInput] = useState("");
   const [notesInput, setNotesInput] = useState("");
   const [finishing, setFinishing] = useState(false);
+
+  const [sheet, setSheet] = useState<SheetState>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+
+  const [activeKey, setActiveKey] = useState<string | null>(
+    () => groups[0]?.key ?? null
+  );
+  const cardRefs = useRef(new Map<string, HTMLDivElement>());
 
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
@@ -141,10 +188,36 @@ export function LiveSessionLogger({
     return () => clearInterval(id);
   }, [session.startedAt]);
 
+  const groupKeys = groups.map((group) => group.key).join("|");
+
+  // Highlight the exercise whose card is nearest the top of the viewport.
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const key = (entry.target as HTMLElement).dataset.groupKey;
+            if (key) setActiveKey(key);
+          }
+        }
+      },
+      { rootMargin: "-120px 0px -55% 0px", threshold: 0 }
+    );
+    for (const el of cardRefs.current.values()) observer.observe(el);
+    return () => observer.disconnect();
+  }, [groupKeys]);
+
   const usedIds = useMemo(
     () => new Set(groups.map((group) => group.exerciseId).filter(Boolean)),
     [groups]
   );
+
+  const sheetGroup = sheet
+    ? groups.find((group) => group.key === sheet.key) ?? null
+    : null;
+  const swapGroup = swapForKey
+    ? groups.find((group) => group.key === swapForKey) ?? null
+    : null;
 
   function mutate(updater: (prev: Group[]) => Group[]) {
     setGroups((prev) => {
@@ -187,6 +260,7 @@ export function LiveSessionLogger({
           setIndex: row.setIndex,
           reps: num(row.reps),
           weight: num(row.weight),
+          rir: num(row.rir),
           done: overrideDone ?? row.done,
         })
       );
@@ -219,7 +293,7 @@ export function LiveSessionLogger({
   function updateField(
     groupKey: string,
     setId: string,
-    field: "reps" | "weight",
+    field: "reps" | "weight" | "rir",
     value: string
   ) {
     mutate((prev) =>
@@ -230,6 +304,33 @@ export function LiveSessionLogger({
               ...group,
               sets: group.sets.map((set) =>
                 set.id === setId ? { ...set, [field]: value } : set
+              ),
+            }
+      )
+    );
+    scheduleSave(setId);
+  }
+
+  function fillFromLast(groupKey: string, setId: string) {
+    const group = groupsRef.current.find((item) => item.key === groupKey);
+    const row = group?.sets.find((set) => set.id === setId);
+    if (!group || !row) return;
+    const lastSet = group.last?.sets[group.sets.indexOf(row)];
+    if (!lastSet || (lastSet.reps == null && lastSet.weight == null)) return;
+    mutate((prev) =>
+      prev.map((item) =>
+        item.key !== groupKey
+          ? item
+          : {
+              ...item,
+              sets: item.sets.map((set) =>
+                set.id === setId
+                  ? {
+                      ...set,
+                      reps: lastSet.reps != null ? String(lastSet.reps) : set.reps,
+                      weight: lastSet.weight ?? set.weight,
+                    }
+                  : set
               ),
             }
       )
@@ -281,7 +382,14 @@ export function LiveSessionLogger({
               ...item,
               sets: [
                 ...item.sets,
-                { id: setId, setIndex: nextIndex, reps: "", weight: "", done: false },
+                {
+                  id: setId,
+                  setIndex: nextIndex,
+                  reps: "",
+                  weight: "",
+                  rir: "",
+                  done: false,
+                },
               ],
             }
       )
@@ -296,21 +404,23 @@ export function LiveSessionLogger({
     );
   }
 
-  async function removeSet(group: Group, setId: string) {
-    const pending = timers.current.get(setId);
+  async function removeLastSet(group: Group) {
+    if (group.sets.length <= 1) return;
+    const last = group.sets[group.sets.length - 1];
+    const pending = timers.current.get(last.id);
     if (pending) {
       clearTimeout(pending);
-      timers.current.delete(setId);
+      timers.current.delete(last.id);
     }
     mutate((prev) =>
       prev.map((item) =>
         item.key !== group.key
           ? item
-          : { ...item, sets: item.sets.filter((set) => set.id !== setId) }
+          : { ...item, sets: item.sets.filter((set) => set.id !== last.id) }
       )
     );
     await track(() =>
-      removeSessionSet({ sessionId: session.id, setId })
+      removeSessionSet({ sessionId: session.id, setId: last.id })
     );
   }
 
@@ -328,10 +438,20 @@ export function LiveSessionLogger({
         exerciseId: option.id,
         name: option.name,
         muscleGroup: option.muscleGroup,
+        equipment: null,
+        coachNotes: null,
+        note: null,
         target: null,
         last: null,
         sets: [
-          { id: result.setId, setIndex: 0, reps: "", weight: "", done: false },
+          {
+            id: result.setId,
+            setIndex: 0,
+            reps: "",
+            weight: "",
+            rir: "",
+            done: false,
+          },
         ],
       },
     ]);
@@ -345,10 +465,82 @@ export function LiveSessionLogger({
         timers.current.delete(set.id);
       }
     }
+    setSheet(null);
     mutate((prev) => prev.filter((item) => item.key !== group.key));
     await track(() =>
       removeSessionExercise({ sessionId: session.id, ref: group.ref })
     );
+  }
+
+  async function swapExercise(group: Group, option: ExerciseOption) {
+    setSwapForKey(null);
+    const result = await track(() =>
+      swapSessionExercise({
+        sessionId: session.id,
+        ref: group.ref,
+        exerciseId: option.id,
+      })
+    );
+    if (!result || "error" in result || !result.exercise) return;
+    const ex = result.exercise;
+    mutate((prev) =>
+      prev.map((item) =>
+        item.key !== group.key
+          ? item
+          : {
+              ...item,
+              key: ex.id,
+              ref: { kind: "exercise", exerciseId: ex.id },
+              exerciseId: ex.id,
+              name: ex.name,
+              muscleGroup: ex.muscleGroup,
+              equipment: ex.equipment,
+              coachNotes: ex.notes,
+              target: null,
+              last: null,
+            }
+      )
+    );
+    setActiveKey(ex.id);
+    toast.success(`Byttet til ${ex.name}`);
+  }
+
+  async function saveNote() {
+    if (!sheetGroup) return;
+    setSavingNote(true);
+    const trimmed = noteDraft.trim();
+    const result = await track(() =>
+      saveSessionExerciseNote({
+        sessionId: session.id,
+        ref: sheetGroup.ref,
+        note: trimmed,
+      })
+    );
+    setSavingNote(false);
+    if (!result || "error" in result) return;
+    mutate((prev) =>
+      prev.map((item) =>
+        item.key !== sheetGroup.key ? item : { ...item, note: trimmed || null }
+      )
+    );
+    setSheet(null);
+  }
+
+  function openInfo(group: Group) {
+    setSheet({ kind: "info", key: group.key });
+  }
+
+  function openNote(group: Group) {
+    setNoteDraft(group.note ?? "");
+    setSheet({ kind: "note", key: group.key });
+  }
+
+  function jumpTo(key: string) {
+    setActiveKey(key);
+    cardRefs.current.get(key)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }
 
   async function openFinish() {
@@ -399,26 +591,64 @@ export function LiveSessionLogger({
 
   return (
     <div className="mx-auto max-w-2xl pb-28">
-      <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-4 flex items-center gap-3 border-b border-border bg-card/95 px-6 py-3 backdrop-blur md:-mx-8 md:-mt-8 md:px-8">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{title}</p>
-          <p className="text-xs text-muted-foreground tabular-nums">
-            <span className="font-mono">{formatClock(elapsed)}</span> ·{" "}
-            {completedSets} sæt
-            {saving > 0 ? (
-              <>
-                {" · "}
-                <Loader2 className="inline size-3 animate-spin align-[-2px]" />{" "}
-                gemmer
-              </>
-            ) : (
-              " · gemt"
-            )}
-          </p>
+      <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-4 border-b border-border bg-card/95 backdrop-blur md:-mx-8 md:-mt-8">
+        <div className="flex items-center gap-3 px-6 py-3 md:px-8">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{title}</p>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              <span className="font-mono">{formatClock(elapsed)}</span> ·{" "}
+              {completedSets} sæt
+              {saving > 0 ? (
+                <>
+                  {" · "}
+                  <Loader2 className="inline size-3 animate-spin align-[-2px]" />{" "}
+                  gemmer
+                </>
+              ) : (
+                " · gemt"
+              )}
+            </p>
+          </div>
+          <Button type="button" size="lg" onClick={openFinish}>
+            Afslut
+          </Button>
         </div>
-        <Button type="button" size="sm" onClick={openFinish}>
-          Afslut
-        </Button>
+
+        {groups.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto px-6 pt-2 pb-3 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {groups.map((group) => {
+              const done = group.sets.filter((set) => set.done).length;
+              const complete = done > 0 && done === group.sets.length;
+              return (
+                <button
+                  key={group.key}
+                  type="button"
+                  onClick={() => jumpTo(group.key)}
+                  aria-label={`Gå til ${group.name}`}
+                  aria-current={group.key === activeKey}
+                  className={cn(
+                    "flex size-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border text-center transition-colors",
+                    group.key === activeKey
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-muted/40 text-muted-foreground",
+                    complete && group.key !== activeKey && "text-foreground"
+                  )}
+                >
+                  <span className="text-sm font-semibold leading-none">
+                    {initials(group.name)}
+                  </span>
+                  <span className="text-[10px] leading-none tabular-nums">
+                    {complete ? (
+                      <Check className="size-3" />
+                    ) : (
+                      `${done}/${group.sets.length}`
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4">
@@ -428,102 +658,115 @@ export function LiveSessionLogger({
           </p>
         )}
 
-        {groups.map((group) => (
-          <Card key={group.key}>
-            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
-              <div className="min-w-0">
-                <p className="font-medium">{group.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {group.target
-                    ? `Mål: ${group.target.sets} × ${group.target.reps}${
-                        group.target.weight ? ` @ ${group.target.weight}` : ""
-                      }`
-                    : formatMuscleGroup(group.muscleGroup)}
+        {groups.map((group, groupIndex) => (
+          <Card
+            key={group.key}
+            data-group-key={group.key}
+            ref={(el) => {
+              if (el) cardRefs.current.set(group.key, el);
+              else cardRefs.current.delete(group.key);
+            }}
+            className="scroll-mt-32 gap-3 py-4"
+          >
+            <div className="px-4">
+              <p className="text-lg font-semibold leading-tight">{group.name}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {targetLine(group, groupIndex + 1, groups.length)}
+              </p>
+              {group.note && (
+                <p className="mt-1.5 rounded-md bg-muted/60 px-2 py-1 text-xs text-foreground">
+                  {group.note}
                 </p>
-                {group.last && (
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Sidste gang:{" "}
-                    {group.last.sets
-                      .map(
-                        (set) =>
-                          `${set.reps ?? "–"}×${set.weight ?? "–"}`
-                      )
-                      .join(", ")}
-                  </p>
-                )}
-              </div>
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={
-                    <Button
-                      type="button"
-                      size="icon-xs"
-                      variant="ghost"
-                      aria-label="Fjern øvelse"
-                    />
-                  }
+              )}
+              <div className="mt-3 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 flex-1"
+                  onClick={() => openInfo(group)}
                 >
-                  <Trash2 />
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Fjern {group.name}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Alle registrerede sæt for denne øvelse i træningspasset
-                      fjernes.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annullér</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => void removeExercise(group)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Fjern
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              <div className="grid grid-cols-[2rem_1fr_1fr_2.25rem_2rem] items-center gap-2 text-xs font-medium text-muted-foreground">
-                <span>Sæt</span>
-                <span>Reps</span>
-                <span>Vægt</span>
-                <span className="sr-only">Færdig</span>
-                <span className="sr-only">Fjern</span>
+                  <Info /> Info
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 flex-1"
+                  onClick={() => setSwapForKey(group.key)}
+                >
+                  <ArrowLeftRight /> Byt
+                </Button>
+                <Button
+                  type="button"
+                  variant={group.note ? "secondary" : "outline"}
+                  className="h-11 flex-1"
+                  onClick={() => openNote(group)}
+                >
+                  <NotebookPen /> Note
+                </Button>
               </div>
+            </div>
+
+            <CardContent className="grid gap-1.5 px-4">
+              <div className="grid grid-cols-[1.75rem_3rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_3rem] items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                <span>Sæt</span>
+                <span>Tidl.</span>
+                <span className="text-center">Vægt</span>
+                <span className="text-center">Reps</span>
+                <span className="text-center">RIR</span>
+                <span className="sr-only">Færdig</span>
+              </div>
+
               {group.sets.map((set, index) => {
                 const lastSet = group.last?.sets[index];
+                const hasLast =
+                  lastSet && (lastSet.reps != null || lastSet.weight != null);
+                const doneInput = set.done
+                  ? "border-primary/40 bg-primary/10 text-foreground dark:bg-primary/15"
+                  : "";
                 return (
                   <div
                     key={set.id}
-                    className="grid grid-cols-[2rem_1fr_1fr_2.25rem_2rem] items-center gap-2"
+                    className="grid grid-cols-[1.75rem_3rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem_3rem] items-center gap-1.5"
                   >
-                    <span className="text-sm text-muted-foreground tabular-nums">
+                    <span
+                      className={cn(
+                        "text-sm font-medium tabular-nums",
+                        set.done ? "text-primary" : "text-muted-foreground"
+                      )}
+                    >
                       {index + 1}
                     </span>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      className="h-10"
-                      placeholder={
-                        lastSet?.reps != null
-                          ? String(lastSet.reps)
-                          : group.target?.reps
+                    <button
+                      type="button"
+                      disabled={!hasLast}
+                      onClick={() => fillFromLast(group.key, set.id)}
+                      className="flex h-12 flex-col items-start justify-center leading-none text-muted-foreground disabled:opacity-60"
+                      aria-label={
+                        hasLast ? "Udfyld fra sidste gang" : "Ingen tidligere data"
                       }
-                      value={set.reps}
-                      onChange={(event) =>
-                        updateField(group.key, set.id, "reps", event.target.value)
-                      }
-                    />
+                    >
+                      {hasLast ? (
+                        <>
+                          <span className="text-xs font-medium tabular-nums">
+                            {lastSet?.weight ?? "–"}
+                          </span>
+                          <span className="text-[10px] tabular-nums">
+                            ×{lastSet?.reps ?? "–"}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xs">–</span>
+                      )}
+                    </button>
                     <Input
                       type="number"
                       inputMode="decimal"
                       min={0}
                       step="0.5"
-                      className="h-10"
+                      className={cn(
+                        "h-12 px-1 text-center text-base tabular-nums",
+                        doneInput
+                      )}
                       placeholder={
                         lastSet?.weight ?? group.target?.weight ?? undefined
                       }
@@ -537,38 +780,82 @@ export function LiveSessionLogger({
                         )
                       }
                     />
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      className={cn(
+                        "h-12 px-1 text-center text-base tabular-nums",
+                        doneInput
+                      )}
+                      placeholder={
+                        lastSet?.reps != null
+                          ? String(lastSet.reps)
+                          : group.target?.reps
+                      }
+                      value={set.reps}
+                      onChange={(event) =>
+                        updateField(group.key, set.id, "reps", event.target.value)
+                      }
+                    />
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      max={20}
+                      className={cn(
+                        "h-12 px-1 text-center text-base tabular-nums",
+                        doneInput
+                      )}
+                      placeholder="–"
+                      value={set.rir}
+                      onChange={(event) =>
+                        updateField(group.key, set.id, "rir", event.target.value)
+                      }
+                    />
                     <Button
                       type="button"
                       size="icon"
                       variant={set.done ? "default" : "outline"}
-                      className={cn("size-9", set.done && "border-transparent")}
+                      className={cn(
+                        "size-11 justify-self-center",
+                        set.done && "border-transparent"
+                      )}
                       aria-pressed={set.done}
-                      aria-label={set.done ? "Markér som ikke færdig" : "Markér sæt færdigt"}
+                      aria-label={
+                        set.done
+                          ? "Markér som ikke færdig"
+                          : "Markér sæt færdigt"
+                      }
                       onClick={() => toggleDone(group.key, set.id)}
                     >
-                      <Check />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon-xs"
-                      variant="ghost"
-                      aria-label="Fjern sæt"
-                      onClick={() => void removeSet(group, set.id)}
-                    >
-                      <Trash2 />
+                      <Check className="size-5" />
                     </Button>
                   </div>
                 );
               })}
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="justify-self-start"
-                onClick={() => void addSet(group)}
-              >
-                <Plus /> Tilføj sæt
-              </Button>
+
+              <div className="mt-1 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 flex-1"
+                  onClick={() => void addSet(group)}
+                >
+                  <Plus /> Tilføj sæt
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-10"
+                  disabled={group.sets.length <= 1}
+                  aria-label="Fjern sidste sæt"
+                  onClick={() => void removeLastSet(group)}
+                >
+                  <Minus />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -576,7 +863,7 @@ export function LiveSessionLogger({
         <Button
           type="button"
           variant="outline"
-          className="w-full"
+          className="h-11 w-full"
           onClick={() => setPickerOpen(true)}
         >
           <Plus /> Tilføj øvelse
@@ -636,6 +923,143 @@ export function LiveSessionLogger({
           setExerciseOptions((current) => [...current, option])
         }
       />
+
+      <ExercisePickerDialog
+        open={swapGroup !== null}
+        onOpenChange={(open) => {
+          if (!open) setSwapForKey(null);
+        }}
+        exercises={exerciseOptions}
+        excludeIds={usedIds}
+        onSelect={(option) => {
+          if (swapGroup) void swapExercise(swapGroup, option);
+        }}
+        onExerciseCreated={(option) =>
+          setExerciseOptions((current) => [...current, option])
+        }
+      />
+
+      <Sheet
+        open={sheet?.kind === "info" && sheetGroup !== null}
+        onOpenChange={(open) => {
+          if (!open) setSheet(null);
+        }}
+      >
+        <SheetContent side="bottom" className="mx-auto max-w-2xl gap-4 p-6">
+          <SheetHeader className="p-0">
+            <SheetTitle>{sheetGroup?.name}</SheetTitle>
+            <SheetDescription>
+              {sheetGroup ? formatMuscleGroup(sheetGroup.muscleGroup) : ""}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="grid gap-3 text-sm">
+            {sheetGroup?.target && (
+              <div>
+                <p className="font-medium">Mål</p>
+                <p className="text-muted-foreground">
+                  {sheetGroup.target.sets} × {sheetGroup.target.reps}
+                  {sheetGroup.target.weight
+                    ? ` @ ${sheetGroup.target.weight}`
+                    : ""}
+                  {sheetGroup.target.restSeconds
+                    ? ` · ${sheetGroup.target.restSeconds}s hvile`
+                    : ""}
+                </p>
+              </div>
+            )}
+            {sheetGroup?.equipment && (
+              <div>
+                <p className="font-medium">Udstyr</p>
+                <p className="text-muted-foreground">{sheetGroup.equipment}</p>
+              </div>
+            )}
+            {sheetGroup?.coachNotes ? (
+              <div>
+                <p className="font-medium">Udførelse</p>
+                <p className="whitespace-pre-line text-muted-foreground">
+                  {sheetGroup.coachNotes}
+                </p>
+              </div>
+            ) : (
+              !sheetGroup?.equipment &&
+              !sheetGroup?.target && (
+                <p className="text-muted-foreground">
+                  Ingen ekstra info for denne øvelse endnu.
+                </p>
+              )
+            )}
+          </div>
+          <SheetFooter className="p-0">
+            {sheetGroup && (
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="w-full"
+                    />
+                  }
+                >
+                  <Trash2 /> Fjern øvelse fra pas
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Fjern {sheetGroup.name}?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Alle registrerede sæt for denne øvelse i træningspasset
+                      fjernes.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annullér</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => void removeExercise(sheetGroup)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Fjern
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet
+        open={sheet?.kind === "note" && sheetGroup !== null}
+        onOpenChange={(open) => {
+          if (!open) setSheet(null);
+        }}
+      >
+        <SheetContent side="bottom" className="mx-auto max-w-2xl gap-4 p-6">
+          <SheetHeader className="p-0">
+            <SheetTitle>Note til {sheetGroup?.name}</SheetTitle>
+            <SheetDescription>
+              Vises på oversigten, når du er færdig med træningspasset.
+            </SheetDescription>
+          </SheetHeader>
+          <Textarea
+            autoFocus
+            rows={4}
+            placeholder="fx justér sædehøjde, albuer tættere på kroppen …"
+            value={noteDraft}
+            onChange={(event) => setNoteDraft(event.target.value)}
+          />
+          <SheetFooter className="p-0">
+            <Button
+              type="button"
+              onClick={() => void saveNote()}
+              disabled={savingNote}
+            >
+              {savingNote ? "Gemmer..." : "Gem note"}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       <Sheet open={finishOpen} onOpenChange={setFinishOpen}>
         <SheetContent side="bottom" className="mx-auto max-w-2xl gap-4 p-6">
