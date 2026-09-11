@@ -46,6 +46,7 @@ export default async function ProgrammePage(
         targetWeight: programmeExercises.targetWeight,
         restSeconds: programmeExercises.restSeconds,
         notes: programmeExercises.notes,
+        supersetWithNext: programmeExercises.supersetWithNext,
       })
       .from(programmeExercises)
       .innerJoin(
@@ -93,6 +94,7 @@ export default async function ProgrammePage(
           row.targetWeight != null ? Number(row.targetWeight) : undefined,
         restSeconds: row.restSeconds ?? undefined,
         notes: row.notes ?? "",
+        supersetWithNext: row.supersetWithNext,
       })),
     })),
   };

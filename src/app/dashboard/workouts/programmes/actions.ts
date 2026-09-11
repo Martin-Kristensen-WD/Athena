@@ -48,6 +48,7 @@ export async function createProgramme(values: ProgrammeInput) {
               : null,
           restSeconds: exercise.restSeconds ?? null,
           notes: exercise.notes || null,
+          supersetWithNext: exercise.supersetWithNext ?? false,
         }))
       );
     }
@@ -120,6 +121,7 @@ export async function updateProgramme(
               : null,
           restSeconds: exercise.restSeconds ?? null,
           notes: exercise.notes || null,
+          supersetWithNext: exercise.supersetWithNext ?? false,
         }))
       );
     }
