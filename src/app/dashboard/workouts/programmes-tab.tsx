@@ -3,6 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import { profiles, programmes, programmeDays, programmeExercises } from "@/db/schema";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -88,36 +89,47 @@ export async function ProgrammesTab() {
         </p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {list.map((programme) => (
-            <Card key={programme.id} className="h-full transition-colors hover:bg-muted/50">
-              <CardHeader>
+          {list.map((programme) => {
+            const isActive = programme.id === activeProgrammeId;
+            return (
+              <Card
+                key={programme.id}
+                className={cn(
+                  "h-full transition-colors",
+                  isActive
+                    ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                    : "hover:bg-muted/50"
+                )}
+              >
+                <CardHeader>
+                  <Link href={`/dashboard/workouts/programmes/${programme.id}`}>
+                    <CardTitle>{programme.name}</CardTitle>
+                  </Link>
+                  <CardAction>
+                    <ActiveProgrammeToggle
+                      programmeId={programme.id}
+                      active={isActive}
+                    />
+                  </CardAction>
+                </CardHeader>
                 <Link href={`/dashboard/workouts/programmes/${programme.id}`}>
-                  <CardTitle>{programme.name}</CardTitle>
-                </Link>
-                <CardAction>
-                  <ActiveProgrammeToggle
-                    programmeId={programme.id}
-                    active={programme.id === activeProgrammeId}
-                  />
-                </CardAction>
-              </CardHeader>
-              <Link href={`/dashboard/workouts/programmes/${programme.id}`}>
-                <CardContent>
-                  {programme.description && (
-                    <p className="text-muted-foreground text-sm">
-                      {programme.description}
+                  <CardContent>
+                    {programme.description && (
+                      <p className="text-muted-foreground text-sm">
+                        {programme.description}
+                      </p>
+                    )}
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      {programme.dayIds.size}{" "}
+                      {programme.dayIds.size === 1 ? "dag" : "dage"} ·{" "}
+                      {programme.exerciseCount}{" "}
+                      {programme.exerciseCount === 1 ? "øvelse" : "øvelser"}
                     </p>
-                  )}
-                  <p className="text-muted-foreground mt-2 text-xs">
-                    {programme.dayIds.size}{" "}
-                    {programme.dayIds.size === 1 ? "dag" : "dage"} ·{" "}
-                    {programme.exerciseCount}{" "}
-                    {programme.exerciseCount === 1 ? "øvelse" : "øvelser"}
-                  </p>
-                </CardContent>
-              </Link>
-            </Card>
-          ))}
+                  </CardContent>
+                </Link>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

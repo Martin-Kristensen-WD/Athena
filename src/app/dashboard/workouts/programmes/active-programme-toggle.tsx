@@ -3,8 +3,8 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { setActiveProgramme } from "./actions";
 
 export function ActiveProgrammeToggle({
@@ -17,37 +17,35 @@ export function ActiveProgrammeToggle({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  function onCheckedChange(checked: boolean) {
+  function toggle() {
     startTransition(async () => {
-      const result = await setActiveProgramme(checked ? programmeId : null);
+      const result = await setActiveProgramme(active ? null : programmeId);
       if (result?.error) {
         toast.error(result.error);
         return;
       }
-      toast.success(checked ? "Program sat som aktivt" : "Aktivt program fjernet");
+      toast.success(active ? "Aktivt program fjernet" : "Program sat som aktivt");
       router.refresh();
     });
   }
 
   return (
-    <div
-      className="flex items-center gap-2"
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={isPending}
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
+        toggle();
       }}
+      className={cn(
+        active &&
+          "border-primary bg-primary/10 text-primary hover:bg-primary/15 dark:bg-primary/15 dark:hover:bg-primary/20"
+      )}
     >
-      <Label htmlFor={`active-${programmeId}`} className="text-muted-foreground text-xs">
-        Aktiv
-      </Label>
-      <Switch
-        id={`active-${programmeId}`}
-        size="sm"
-        checked={active}
-        disabled={isPending}
-        onCheckedChange={onCheckedChange}
-        className="data-checked:bg-success dark:data-checked:bg-success"
-      />
-    </div>
+      {isPending ? "Opdaterer..." : active ? "Aktivt program" : "Sæt som aktiv program"}
+    </Button>
   );
 }
