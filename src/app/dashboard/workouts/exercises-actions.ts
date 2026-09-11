@@ -7,10 +7,11 @@ import { exercises } from "@/db/schema";
 import { auth } from "@/auth";
 import { exerciseFormSchema, type ExerciseFormInput } from "@/lib/validations/exercises";
 import { isForeignKeyViolation, isUniqueViolation } from "@/lib/db-errors";
+import { toTitleCase } from "@/lib/text";
 
 function normalize(values: ExerciseFormInput) {
   return {
-    name: values.name.trim(),
+    name: toTitleCase(values.name),
     muscleGroup: values.muscleGroup,
     equipment: values.equipment?.trim() ? values.equipment.trim() : null,
     notes: values.notes?.trim() ? values.notes.trim() : null,
@@ -87,6 +88,44 @@ export async function updateExercise(id: string, values: ExerciseFormInput) {
   }
 
   revalidatePath("/dashboard/workouts");
+  return { success: true };
+}
+
+// Catalog (system) exercises are shared across every user, so any signed-in
+// user may edit one — unlike create/delete, which stay admin-only
+// (/admin/exercises) since removing or adding to the shared catalog has a
+// bigger blast radius than adjusting an existing entry's details.
+export async function updateCatalogExercise(id: string, values: ExerciseFormInput) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Du skal være logget ind." };
+  }
+
+  const parsed = exerciseFormSchema.safeParse(values);
+  if (!parsed.success) {
+    return { error: "Tjek formularen, og prøv igen." };
+  }
+
+  const db = getDb();
+  try {
+    const result = await db
+      .update(exercises)
+      .set(normalize(parsed.data))
+      .where(and(eq(exercises.id, id), eq(exercises.isSystem, true)))
+      .returning({ id: exercises.id });
+
+    if (result.length === 0) {
+      return { error: "Øvelsen blev ikke fundet." };
+    }
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return { error: "Der findes allerede en katalogøvelse med dette navn." };
+    }
+    throw error;
+  }
+
+  revalidatePath("/dashboard/workouts");
+  revalidatePath("/admin/exercises");
   return { success: true };
 }
 

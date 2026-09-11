@@ -49,7 +49,12 @@ import {
   type ExerciseFormInput,
 } from "@/lib/validations/exercises";
 import type { exercises } from "@/db/schema";
-import { createExercise, deleteExercise, updateExercise } from "./exercises-actions";
+import {
+  createExercise,
+  deleteExercise,
+  updateCatalogExercise,
+  updateExercise,
+} from "./exercises-actions";
 
 type ExerciseRow = typeof exercises.$inferSelect;
 
@@ -68,6 +73,7 @@ export function ExercisesTabClient({
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ExerciseRow | null>(null);
+  const [catalogEditing, setCatalogEditing] = useState<ExerciseRow | null>(null);
   const [cloneDefaults, setCloneDefaults] =
     useState<Partial<ExerciseFormInput> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ExerciseRow | null>(null);
@@ -77,18 +83,28 @@ export function ExercisesTabClient({
 
   function openCreate() {
     setEditing(null);
+    setCatalogEditing(null);
     setCloneDefaults(null);
     setFormOpen(true);
   }
 
   function openEdit(exercise: ExerciseRow) {
     setEditing(exercise);
+    setCatalogEditing(null);
+    setCloneDefaults(null);
+    setFormOpen(true);
+  }
+
+  function openEditCatalog(exercise: ExerciseRow) {
+    setEditing(null);
+    setCatalogEditing(exercise);
     setCloneDefaults(null);
     setFormOpen(true);
   }
 
   function openClone(exercise: ExerciseRow) {
     setEditing(null);
+    setCatalogEditing(null);
     setCloneDefaults({
       name: exercise.name,
       muscleGroup: exercise.muscleGroup,
@@ -101,9 +117,11 @@ export function ExercisesTabClient({
   async function handleSubmit(values: ExerciseFormInput) {
     const result = editing
       ? await updateExercise(editing.id, values)
-      : await createExercise(values);
+      : catalogEditing
+        ? await updateCatalogExercise(catalogEditing.id, values)
+        : await createExercise(values);
     if (!result?.error) {
-      toast.success(editing ? "Øvelse opdateret" : "Øvelse oprettet");
+      toast.success(editing || catalogEditing ? "Øvelse opdateret" : "Øvelse oprettet");
     }
     return result;
   }
@@ -129,7 +147,14 @@ export function ExercisesTabClient({
         equipment: editing.equipment ?? "",
         notes: editing.notes ?? "",
       }
-    : (cloneDefaults ?? undefined);
+    : catalogEditing
+      ? {
+          name: catalogEditing.name,
+          muscleGroup: catalogEditing.muscleGroup,
+          equipment: catalogEditing.equipment ?? "",
+          notes: catalogEditing.notes ?? "",
+        }
+      : (cloneDefaults ?? undefined);
 
   const catalogSearch = catalogQuery.trim().toLowerCase();
   const filteredCatalog = catalogSearch
@@ -275,13 +300,23 @@ export function ExercisesTabClient({
                         {exercise.equipment ?? "—"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openClone(exercise)}
-                        >
-                          <Copy /> Klon
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => openEditCatalog(exercise)}
+                          >
+                            <Pencil />
+                            <span className="sr-only">Rediger</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openClone(exercise)}
+                          >
+                            <Copy /> Klon
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -317,17 +352,21 @@ export function ExercisesTabClient({
         title={
           editing
             ? "Rediger øvelse"
-            : cloneDefaults
-              ? "Klon øvelse"
-              : "Tilføj øvelse"
+            : catalogEditing
+              ? "Rediger katalogøvelse"
+              : cloneDefaults
+                ? "Klon øvelse"
+                : "Tilføj øvelse"
         }
         description={
-          cloneDefaults && !editing
-            ? "Gem din egen redigerbare kopi af denne katalogøvelse."
-            : undefined
+          catalogEditing
+            ? "Denne øvelse er delt med alle brugere. Ændringer påvirker, hvad alle ser."
+            : cloneDefaults && !editing
+              ? "Gem din egen redigerbare kopi af denne katalogøvelse."
+              : undefined
         }
         defaultValues={dialogDefaults}
-        submitLabel={editing ? "Gem ændringer" : "Opret"}
+        submitLabel={editing || catalogEditing ? "Gem ændringer" : "Opret"}
         onSubmit={handleSubmit}
       />
 
