@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import { ProgrammeForm } from "../programme-form";
 import { DeleteProgrammeDialog } from "./delete-programme-dialog";
+import { ShareProgrammeDialog } from "./share-programme-dialog";
 
 export default async function ProgrammePage(
   props: PageProps<"/dashboard/workouts/programmes/[programmeId]">
@@ -121,6 +122,7 @@ export default async function ProgrammePage(
           >
             <Play /> Start træningspas
           </Button>
+          <ShareProgrammeDialog programmeId={programme.id} />
           <DeleteProgrammeDialog programmeId={programme.id} />
         </div>
       </div>
