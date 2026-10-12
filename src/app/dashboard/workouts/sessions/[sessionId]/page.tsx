@@ -47,6 +47,7 @@ export default async function SessionDetailPage(
       completedAt: workoutSessions.completedAt,
       durationMinutes: workoutSessions.durationMinutes,
       notes: workoutSessions.notes,
+      name: workoutSessions.name,
       programmeName: programmes.name,
       programmeDayName: programmeDays.name,
     })
@@ -158,7 +159,7 @@ export default async function SessionDetailPage(
               ? workoutSession.programmeDayName
                 ? `${workoutSession.programmeName} — ${workoutSession.programmeDayName}`
                 : workoutSession.programmeName
-              : "Frit træningspas"}
+              : workoutSession.name ?? "Frit træningspas"}
           </h1>
           <p className="text-muted-foreground mt-1">
             {format(workoutSession.completedAt ?? workoutSession.startedAt, "PPP p", {

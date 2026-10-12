@@ -9,6 +9,15 @@ function optionalCoercedNumber<T extends z.ZodTypeAny>(schema: T) {
   );
 }
 
+// Same empty-string-means-absent treatment, for an optional free-text field
+// like a session name.
+function optionalTrimmedString(maxLength: number, maxMessage: string) {
+  return z.preprocess(
+    (value) => (value === "" || value === undefined || value === null ? undefined : value),
+    z.string().trim().max(maxLength, maxMessage).optional()
+  );
+}
+
 export const sessionSetLogSchema = z.object({
   reps: optionalCoercedNumber(z.coerce.number().int().nonnegative("Indtast gyldige reps")),
   weight: optionalCoercedNumber(z.coerce.number().nonnegative("Indtast en gyldig vægt")),
@@ -40,6 +49,7 @@ export const freeSessionExerciseLogSchema = z.object({
 });
 
 export const freeWorkoutSessionSchema = z.object({
+  name: optionalTrimmedString(100, "Navnet er for langt"),
   durationMinutes: optionalCoercedNumber(
     z.coerce.number().int().positive("Indtast en gyldig varighed")
   ),
@@ -80,7 +90,10 @@ export const startSessionSchema = z.discriminatedUnion("kind", [
     programmeId: z.string().uuid("Vælg et program"),
     programmeDayId: z.string().uuid("Vælg en dag"),
   }),
-  z.object({ kind: z.literal("free") }),
+  z.object({
+    kind: z.literal("free"),
+    name: optionalTrimmedString(100, "Navnet er for langt"),
+  }),
 ]);
 
 export const saveSessionSetSchema = z.object({

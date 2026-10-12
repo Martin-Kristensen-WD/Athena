@@ -26,6 +26,7 @@ export async function SessionsTab() {
         startedAt: workoutSessions.startedAt,
         completedAt: workoutSessions.completedAt,
         durationMinutes: workoutSessions.durationMinutes,
+        name: workoutSessions.name,
         programmeName: programmes.name,
         setId: workoutSessionSets.id,
       })
@@ -50,6 +51,7 @@ export async function SessionsTab() {
       id: string;
       date: Date;
       durationMinutes: number | null;
+      name: string | null;
       programmeName: string | null;
       setCount: number;
     }
@@ -63,6 +65,7 @@ export async function SessionsTab() {
         id: row.id,
         date: row.completedAt ?? row.startedAt,
         durationMinutes: row.durationMinutes,
+        name: row.name,
         programmeName: row.programmeName,
         setCount: row.setId ? 1 : 0,
       });
@@ -114,7 +117,7 @@ export async function SessionsTab() {
               <Card className="transition-colors hover:bg-muted/50">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="text-base">
-                    {item.programmeName ?? "Frit træningspas"}
+                    {item.programmeName ?? item.name ?? "Frit træningspas"}
                   </CardTitle>
                   <span className="text-muted-foreground text-sm">
                     {format(item.date, "PPP", { locale: da })}

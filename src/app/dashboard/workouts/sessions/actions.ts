@@ -133,7 +133,7 @@ export async function createFreeWorkoutSession(values: FreeWorkoutSessionInput) 
   }
 
   const userId = session.user.id;
-  const { durationMinutes, notes, exercises } = parsed.data;
+  const { name, durationMinutes, notes, exercises } = parsed.data;
 
   const db = getTransactionalDb();
   const sessionId = await db.transaction(async (tx) => {
@@ -143,6 +143,7 @@ export async function createFreeWorkoutSession(values: FreeWorkoutSessionInput) 
         userId,
         programmeId: null,
         programmeDayId: null,
+        name: name || null,
         durationMinutes: durationMinutes ?? null,
         notes: notes || null,
       })
@@ -253,7 +254,7 @@ export async function startWorkoutSession(input: StartSessionInput) {
   if (parsed.data.kind === "free") {
     const [created] = await getDb()
       .insert(workoutSessions)
-      .values({ userId, status: "active" })
+      .values({ userId, status: "active", name: parsed.data.name || null })
       .returning({ id: workoutSessions.id });
 
     revalidatePath("/dashboard/workouts");

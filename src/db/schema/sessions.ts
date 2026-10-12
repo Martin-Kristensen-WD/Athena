@@ -30,6 +30,10 @@ export const workoutSessions = pgTable(
     programmeDayId: uuid("programme_day_id").references(() => programmeDays.id, {
       onDelete: "set null",
     }),
+    // User-given label for sessions that aren't tied to a programme (e.g.
+    // "Pull day"). Programme sessions are titled after the programme/day
+    // instead, so this is only set — and only shown — for free sessions.
+    name: text("name"),
     // "completed" by default so historical rows and the manual "log a past
     // workout" path stay valid without a backfill. A live session is created
     // as "active" and flipped to "completed" when the user finishes it.
