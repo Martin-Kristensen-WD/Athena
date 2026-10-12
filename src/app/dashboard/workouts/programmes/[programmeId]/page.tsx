@@ -120,7 +120,7 @@ export default async function ProgrammePage(
               />
             }
           >
-            <Play /> Start træningspas
+            <Play /> Start træning
           </Button>
           <ShareProgrammeDialog programmeId={programme.id} />
           <DeleteProgrammeDialog programmeId={programme.id} />

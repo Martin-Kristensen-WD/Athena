@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { toast } from "sonner";
 import { ArrowDown, ArrowUp, Link2, Link2Off, Plus, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,14 +24,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -492,249 +485,236 @@ function ProgrammeDayCard({
             Ingen øvelser endnu. Tilføj en for at komme i gang.
           </p>
         ) : (
-          <div className="mt-3 rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Øvelse</TableHead>
-                  <TableHead className="w-20">Sæt</TableHead>
-                  <TableHead className="w-28">Mål-reps</TableHead>
-                  <TableHead className="w-28">Vægt</TableHead>
-                  <TableHead className="w-24">Pause (sek.)</TableHead>
-                  <TableHead>Noter</TableHead>
-                  <TableHead className="w-36 text-right">Handlinger</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fields.map((field, index) => {
-                  const exercise = exercisesById.get(field.exerciseId);
-                  const supersetLabel = supersetGroupLabels[index];
-                  const linkedToNext = Boolean(
-                    watchedExercises?.[index]?.supersetWithNext
-                  );
-                  const linkedToPrevious =
-                    index > 0 &&
-                    Boolean(watchedExercises?.[index - 1]?.supersetWithNext);
-                  return (
-                    <TableRow
-                      key={field.id}
-                      className={supersetLabel ? "bg-accent/40" : undefined}
-                    >
-                      <TableCell className="whitespace-normal">
-                        <div className="flex items-start gap-1.5">
-                          {supersetLabel && (
-                            <Badge variant="outline" className="shrink-0">
-                              Superset {supersetLabel}
-                            </Badge>
-                          )}
-                          <div>
-                            <div className="font-medium">
-                              {field.exerciseName ?? exercise?.name}
-                            </div>
-                            <div className="text-muted-foreground text-xs capitalize">
-                              {formatMuscleGroup(
-                                field.muscleGroup ?? exercise?.muscleGroup ?? ""
-                              )}
-                            </div>
-                          </div>
+          <div className="mt-3 grid gap-3">
+            {fields.map((field, index) => {
+              const exercise = exercisesById.get(field.exerciseId);
+              const supersetLabel = supersetGroupLabels[index];
+              const linkedToNext = Boolean(
+                watchedExercises?.[index]?.supersetWithNext
+              );
+              const linkedToPrevious =
+                index > 0 &&
+                Boolean(watchedExercises?.[index - 1]?.supersetWithNext);
+              return (
+                <div
+                  key={field.id}
+                  className={cn(
+                    "rounded-lg border p-3",
+                    supersetLabel && "bg-accent/40"
+                  )}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="flex items-start gap-1.5">
+                      {supersetLabel && (
+                        <Badge variant="outline" className="shrink-0">
+                          Superset {supersetLabel}
+                        </Badge>
+                      )}
+                      <div>
+                        <div className="font-medium">
+                          {field.exerciseName ?? exercise?.name}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <FormField
-                          control={control}
-                          name={`days.${dayIndex}.exercises.${index}.sets`}
-                          render={({ field: setsField }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  className="w-16"
-                                  {...setsField}
-                                  value={
-                                    (setsField.value as
-                                      | string
-                                      | number
-                                      | undefined) ?? ""
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
+                        <div className="text-muted-foreground text-xs capitalize">
+                          {formatMuscleGroup(
+                            field.muscleGroup ?? exercise?.muscleGroup ?? ""
                           )}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <FormField
-                          control={control}
-                          name={`days.${dayIndex}.exercises.${index}.targetReps`}
-                          render={({ field: repsField }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input
-                                  placeholder="8-12"
-                                  className="w-24"
-                                  {...repsField}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <FormField
-                          control={control}
-                          name={`days.${dayIndex}.exercises.${index}.targetWeight`}
-                          render={({ field: weightField }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  step="0.5"
-                                  className="w-24"
-                                  {...weightField}
-                                  value={
-                                    (weightField.value as
-                                      | string
-                                      | number
-                                      | undefined) ?? ""
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <FormField
-                          control={control}
-                          name={`days.${dayIndex}.exercises.${index}.restSeconds`}
-                          render={({ field: restField }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  className="w-20"
-                                  {...restField}
-                                  value={
-                                    (restField.value as
-                                      | string
-                                      | number
-                                      | undefined) ?? ""
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <FormField
-                          control={control}
-                          name={`days.${dayIndex}.exercises.${index}.notes`}
-                          render={({ field: notesField }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input
-                                  placeholder="Valgfrit"
-                                  className="w-32"
-                                  {...notesField}
-                                  value={notesField.value ?? ""}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            disabled={index === 0}
-                            onClick={() => move(index, index - 1)}
-                          >
-                            <ArrowUp />
-                            <span className="sr-only">Flyt op</span>
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            disabled={index === fields.length - 1}
-                            onClick={() => move(index, index + 1)}
-                          >
-                            <ArrowDown />
-                            <span className="sr-only">Flyt ned</span>
-                          </Button>
-                          <Popover>
-                            <PopoverTrigger
-                              render={
-                                <Button
-                                  type="button"
-                                  variant={
-                                    linkedToPrevious || linkedToNext
-                                      ? "secondary"
-                                      : "ghost"
-                                  }
-                                  size="icon-sm"
-                                />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={index === 0}
+                        onClick={() => move(index, index - 1)}
+                      >
+                        <ArrowUp />
+                        <span className="sr-only">Flyt op</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={index === fields.length - 1}
+                        onClick={() => move(index, index + 1)}
+                      >
+                        <ArrowDown />
+                        <span className="sr-only">Flyt ned</span>
+                      </Button>
+                      <Popover>
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant={
+                                linkedToPrevious || linkedToNext
+                                  ? "secondary"
+                                  : "ghost"
                               }
-                            >
-                              {linkedToPrevious || linkedToNext ? (
-                                <Link2 />
-                              ) : (
-                                <Link2Off />
-                              )}
-                              <span className="sr-only">Superset</span>
-                            </PopoverTrigger>
-                            <PopoverContent align="end" className="w-64 p-2">
-                              <p className="text-muted-foreground px-1 pb-1 text-xs font-medium">
-                                Superset
-                              </p>
-                              <label className="hover:bg-muted flex items-center gap-2 rounded-md p-1.5 text-sm has-disabled:opacity-50">
-                                <Checkbox
-                                  checked={linkedToPrevious}
-                                  disabled={index === 0}
-                                  onCheckedChange={() =>
-                                    toggleSupersetWithNext(index - 1)
-                                  }
-                                />
-                                Sammen med forrige øvelse
-                              </label>
-                              <label className="hover:bg-muted flex items-center gap-2 rounded-md p-1.5 text-sm has-disabled:opacity-50">
-                                <Checkbox
-                                  checked={linkedToNext}
-                                  disabled={index === fields.length - 1}
-                                  onCheckedChange={() =>
-                                    toggleSupersetWithNext(index)
-                                  }
-                                />
-                                Sammen med næste øvelse
-                              </label>
-                            </PopoverContent>
-                          </Popover>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => removeExercise(index)}
-                          >
-                            <Trash2 />
-                            <span className="sr-only">Fjern</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                              size="icon-sm"
+                            />
+                          }
+                        >
+                          {linkedToPrevious || linkedToNext ? (
+                            <Link2 />
+                          ) : (
+                            <Link2Off />
+                          )}
+                          <span className="sr-only">Superset</span>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" className="w-64 p-2">
+                          <p className="text-muted-foreground px-1 pb-1 text-xs font-medium">
+                            Superset
+                          </p>
+                          <label className="hover:bg-muted flex items-center gap-2 rounded-md p-1.5 text-sm has-disabled:opacity-50">
+                            <Checkbox
+                              checked={linkedToPrevious}
+                              disabled={index === 0}
+                              onCheckedChange={() =>
+                                toggleSupersetWithNext(index - 1)
+                              }
+                            />
+                            Sammen med forrige øvelse
+                          </label>
+                          <label className="hover:bg-muted flex items-center gap-2 rounded-md p-1.5 text-sm has-disabled:opacity-50">
+                            <Checkbox
+                              checked={linkedToNext}
+                              disabled={index === fields.length - 1}
+                              onCheckedChange={() =>
+                                toggleSupersetWithNext(index)
+                              }
+                            />
+                            Sammen med næste øvelse
+                          </label>
+                        </PopoverContent>
+                      </Popover>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => removeExercise(index)}
+                      >
+                        <Trash2 />
+                        <span className="sr-only">Fjern</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <FormField
+                      control={control}
+                      name={`days.${dayIndex}.exercises.${index}.sets`}
+                      render={({ field: setsField }) => (
+                        <FormItem>
+                          <FormLabel className="text-muted-foreground text-xs font-normal">
+                            Sæt
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              {...setsField}
+                              value={
+                                (setsField.value as
+                                  | string
+                                  | number
+                                  | undefined) ?? ""
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name={`days.${dayIndex}.exercises.${index}.targetReps`}
+                      render={({ field: repsField }) => (
+                        <FormItem>
+                          <FormLabel className="text-muted-foreground text-xs font-normal">
+                            Mål-reps
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="8-12" {...repsField} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name={`days.${dayIndex}.exercises.${index}.targetWeight`}
+                      render={({ field: weightField }) => (
+                        <FormItem>
+                          <FormLabel className="text-muted-foreground text-xs font-normal">
+                            Vægt
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              {...weightField}
+                              value={
+                                (weightField.value as
+                                  | string
+                                  | number
+                                  | undefined) ?? ""
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name={`days.${dayIndex}.exercises.${index}.restSeconds`}
+                      render={({ field: restField }) => (
+                        <FormItem>
+                          <FormLabel className="text-muted-foreground text-xs font-normal">
+                            Pause (sek.)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...restField}
+                              value={
+                                (restField.value as
+                                  | string
+                                  | number
+                                  | undefined) ?? ""
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={control}
+                    name={`days.${dayIndex}.exercises.${index}.notes`}
+                    render={({ field: notesField }) => (
+                      <FormItem className="mt-3">
+                        <FormLabel className="text-muted-foreground text-xs font-normal">
+                          Noter
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Valgfrit"
+                            {...notesField}
+                            value={notesField.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
 

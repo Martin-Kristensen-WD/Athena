@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -102,15 +101,18 @@ export async function ProgrammesTab() {
                 )}
               >
                 <CardHeader>
-                  <Link href={`/dashboard/workouts/programmes/${programme.id}`}>
-                    <CardTitle>{programme.name}</CardTitle>
-                  </Link>
-                  <CardAction>
+                  <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <Link
+                      href={`/dashboard/workouts/programmes/${programme.id}`}
+                      className="min-w-0"
+                    >
+                      <CardTitle className="truncate">{programme.name}</CardTitle>
+                    </Link>
                     <ActiveProgrammeToggle
                       programmeId={programme.id}
                       active={isActive}
                     />
-                  </CardAction>
+                  </div>
                 </CardHeader>
                 <Link href={`/dashboard/workouts/programmes/${programme.id}`}>
                   <CardContent>
