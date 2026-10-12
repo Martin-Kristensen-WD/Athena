@@ -58,6 +58,7 @@ export type LiveExercise = {
 export type LiveSession = {
   id: string;
   startedAt: Date;
+  name: string | null;
   programmeName: string | null;
   programmeDayName: string | null;
   isFree: boolean;
@@ -167,6 +168,7 @@ export async function loadLiveSession(
       userId: workoutSessions.userId,
       status: workoutSessions.status,
       startedAt: workoutSessions.startedAt,
+      name: workoutSessions.name,
       programmeId: workoutSessions.programmeId,
       programmeDayId: workoutSessions.programmeDayId,
       programmeName: programmes.name,
@@ -345,6 +347,7 @@ export async function loadLiveSession(
   return {
     id: session.id,
     startedAt: session.startedAt,
+    name: session.name,
     programmeName: session.programmeName,
     programmeDayName: session.programmeDayName,
     isFree: session.programmeId === null,

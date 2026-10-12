@@ -64,8 +64,9 @@ function CardIcon({ icon: Icon, tone }: { icon: LucideIcon; tone: CardTone }) {
   );
 }
 
-function daysAgo(days: number) {
-  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+function startOfToday() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
 type Direction = "up" | "down" | "flat" | "none";
@@ -396,7 +397,7 @@ export default async function DashboardPage() {
       .where(
         and(
           eq(workoutSessions.userId, userId),
-          gte(workoutSessions.startedAt, daysAgo(7))
+          gte(workoutSessions.startedAt, startOfWeek(startOfToday()))
         )
       ),
     getActiveSessionId(userId),

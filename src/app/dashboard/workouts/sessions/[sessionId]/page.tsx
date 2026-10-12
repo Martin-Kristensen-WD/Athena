@@ -47,6 +47,7 @@ export default async function SessionDetailPage(
       completedAt: workoutSessions.completedAt,
       durationMinutes: workoutSessions.durationMinutes,
       notes: workoutSessions.notes,
+      name: workoutSessions.name,
       programmeName: programmes.name,
       programmeDayName: programmeDays.name,
     })
@@ -81,6 +82,11 @@ export default async function SessionDetailPage(
         rir: workoutSessionSets.rir,
         programmeExerciseName: exercises.name,
         directExerciseName: directExercise.name,
+        // The exercise's position in the programme day, so the recap lists
+        // exercises in the same order the programme is structured rather
+        // than in (per-exercise) set-index order. Null for free sessions,
+        // where createdAt (below) carries the ordering instead.
+        orderIndex: programmeExercises.orderIndex,
       })
       .from(workoutSessionSets)
       .leftJoin(
@@ -93,7 +99,11 @@ export default async function SessionDetailPage(
         eq(directExercise.id, workoutSessionSets.exerciseId)
       )
       .where(eq(workoutSessionSets.sessionId, sessionId))
-      .orderBy(asc(workoutSessionSets.setIndex)),
+      .orderBy(
+        asc(programmeExercises.orderIndex),
+        asc(workoutSessionSets.createdAt),
+        asc(workoutSessionSets.setIndex)
+      ),
     getSessionPersonalRecords(session.user.id, sessionId),
     db
       .select({
@@ -158,7 +168,7 @@ export default async function SessionDetailPage(
               ? workoutSession.programmeDayName
                 ? `${workoutSession.programmeName} — ${workoutSession.programmeDayName}`
                 : workoutSession.programmeName
-              : "Frit træningspas"}
+              : workoutSession.name ?? "Frit træningspas"}
           </h1>
           <p className="text-muted-foreground mt-1">
             {format(workoutSession.completedAt ?? workoutSession.startedAt, "PPP p", {

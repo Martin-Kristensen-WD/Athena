@@ -94,41 +94,44 @@ export async function ProgrammesTab() {
               <Card
                 key={programme.id}
                 className={cn(
-                  "h-full transition-colors",
+                  "relative h-full transition-colors",
                   isActive
                     ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
                     : "hover:bg-muted/50"
                 )}
               >
+                <Link
+                  href={`/dashboard/workouts/programmes/${programme.id}`}
+                  className="absolute inset-0 z-10"
+                >
+                  <span className="sr-only">{programme.name}</span>
+                </Link>
                 <CardHeader>
                   <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <Link
-                      href={`/dashboard/workouts/programmes/${programme.id}`}
-                      className="min-w-0"
-                    >
-                      <CardTitle className="truncate">{programme.name}</CardTitle>
-                    </Link>
-                    <ActiveProgrammeToggle
-                      programmeId={programme.id}
-                      active={isActive}
-                    />
+                    <CardTitle className="min-w-0 truncate">
+                      {programme.name}
+                    </CardTitle>
+                    <div className="relative z-20">
+                      <ActiveProgrammeToggle
+                        programmeId={programme.id}
+                        active={isActive}
+                      />
+                    </div>
                   </div>
                 </CardHeader>
-                <Link href={`/dashboard/workouts/programmes/${programme.id}`}>
-                  <CardContent>
-                    {programme.description && (
-                      <p className="text-muted-foreground text-sm">
-                        {programme.description}
-                      </p>
-                    )}
-                    <p className="text-muted-foreground mt-2 text-xs">
-                      {programme.dayIds.size}{" "}
-                      {programme.dayIds.size === 1 ? "dag" : "dage"} ·{" "}
-                      {programme.exerciseCount}{" "}
-                      {programme.exerciseCount === 1 ? "øvelse" : "øvelser"}
+                <CardContent>
+                  {programme.description && (
+                    <p className="text-muted-foreground text-sm">
+                      {programme.description}
                     </p>
-                  </CardContent>
-                </Link>
+                  )}
+                  <p className="text-muted-foreground mt-2 text-xs">
+                    {programme.dayIds.size}{" "}
+                    {programme.dayIds.size === 1 ? "dag" : "dage"} ·{" "}
+                    {programme.exerciseCount}{" "}
+                    {programme.exerciseCount === 1 ? "øvelse" : "øvelser"}
+                  </p>
+                </CardContent>
               </Card>
             );
           })}

@@ -3,6 +3,7 @@
 import { and, eq, gte, lt } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
+import { getTransactionalDb } from "@/db/transaction";
 import { metricDefinitions, metricEntries, userTrackedMetrics } from "@/db/schema";
 import { auth } from "@/auth";
 import { logStepsEntrySchema, type LogStepsEntryInput } from "@/lib/validations/steps";
@@ -66,6 +67,85 @@ export async function logStepsEntry(values: LogStepsEntryInput) {
     metricDefinitionId: definition.id,
     value: parsed.data.steps.toString(),
     loggedAt,
+  });
+
+  revalidatePath("/dashboard/steps");
+  revalidatePath("/dashboard");
+
+  return { success: true };
+}
+
+/**
+ * Replaces the day's step count (deleting any existing entries for that day
+ * first) rather than adding to it — used when editing a day from the month
+ * calendar, where the user is correcting the day's total, not logging an
+ * additional walk.
+ */
+export async function setStepsDay(values: LogStepsEntryInput) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Du skal være logget ind." };
+  }
+
+  const parsed = logStepsEntrySchema.safeParse(values);
+  if (!parsed.success) {
+    return { error: "Tjek formularen, og prøv igen." };
+  }
+
+  const dayStart = parseDayStart(parsed.data.date);
+  if (!dayStart) {
+    return { error: "Indtast en gyldig dato." };
+  }
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  const loggedAt = new Date(dayStart.getTime() + 12 * 60 * 60 * 1000);
+
+  const userId = session.user.id;
+  const db = getDb();
+
+  const [definition] = await db
+    .select({ id: metricDefinitions.id })
+    .from(metricDefinitions)
+    .where(eq(metricDefinitions.key, "steps"));
+
+  if (!definition) {
+    return { error: "Skridt-målingen er ikke konfigureret." };
+  }
+
+  const [tracked] = await db
+    .select({ id: userTrackedMetrics.id })
+    .from(userTrackedMetrics)
+    .where(
+      and(
+        eq(userTrackedMetrics.userId, userId),
+        eq(userTrackedMetrics.metricDefinitionId, definition.id)
+      )
+    );
+
+  if (!tracked) {
+    await db
+      .insert(userTrackedMetrics)
+      .values({ userId, metricDefinitionId: definition.id })
+      .onConflictDoNothing();
+  }
+
+  const tx = getTransactionalDb();
+  await tx.transaction(async (trx) => {
+    await trx
+      .delete(metricEntries)
+      .where(
+        and(
+          eq(metricEntries.userId, userId),
+          eq(metricEntries.metricDefinitionId, definition.id),
+          gte(metricEntries.loggedAt, dayStart),
+          lt(metricEntries.loggedAt, dayEnd)
+        )
+      );
+    await trx.insert(metricEntries).values({
+      userId,
+      metricDefinitionId: definition.id,
+      value: parsed.data.steps.toString(),
+      loggedAt,
+    });
   });
 
   revalidatePath("/dashboard/steps");

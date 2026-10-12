@@ -64,6 +64,7 @@ export function FreeSessionLogForm({
   >({
     resolver: zodResolver(freeWorkoutSessionSchema),
     defaultValues: {
+      name: "",
       durationMinutes: undefined,
       notes: "",
       exercises: [],
@@ -111,6 +112,23 @@ export function FreeSessionLogForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
         <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem className="sm:col-span-2">
+                <FormLabel>Navn (valgfrit)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Fx Push day"
+                    {...field}
+                    value={(field.value as string | undefined) ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="durationMinutes"

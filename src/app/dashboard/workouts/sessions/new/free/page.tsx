@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { getDb } from "@/db";
 import { exercises } from "@/db/schema";
 import { FreeSessionLogForm } from "../../free-session-log-form";
-import { StartSessionButton } from "../../start-session-button";
+import { StartFreeSessionForm } from "./start-free-session-form";
 import { getActiveSessionId } from "../../live-queries";
 
 export default async function NewFreeSessionPage({
@@ -63,10 +63,8 @@ export default async function NewFreeSessionPage({
         Start et tomt pas og tilføj øvelser og sæt løbende, som du laver dem.
         Hviletimer og sidste gangs tal vises for hver øvelse.
       </p>
-      <div className="mt-6 flex flex-wrap items-center gap-4">
-        <StartSessionButton input={{ kind: "free" }}>
-          Start tomt træningspas
-        </StartSessionButton>
+      <div className="mt-6 flex flex-col gap-4">
+        <StartFreeSessionForm />
         <Link
           href="/dashboard/workouts/sessions/new/free?mode=manual"
           className="text-sm text-muted-foreground underline"
