@@ -14,11 +14,11 @@ import {
   entryDayKey,
   startOfWeek,
 } from "@/lib/date";
-import { TrackingCalendar } from "@/components/tracking-calendar";
 import { TrackingYearHeatmap } from "@/components/tracking-year-heatmap";
 import { TrackingStats } from "@/components/tracking-stats";
 import { FoodLogForm } from "./food-log-form";
 import { FoodLogList, type FoodDayRow } from "./food-log-list";
+import { FoodCalendarSection } from "./food-calendar-section";
 
 const FOOD_METRIC_KEYS = ["calories", "protein", "carbs", "fat"] as const;
 
@@ -287,11 +287,12 @@ export default async function FoodPage({
           </div>
         </CardHeader>
         <CardContent>
-          <TrackingCalendar
+          <FoodCalendarSection
             year={year}
             monthIndex={monthIndex}
-            trackedDays={trackedDays}
+            trackedDays={[...trackedDays]}
             todayKey={todayKey}
+            dailyValues={Object.fromEntries(byDay)}
           />
         </CardContent>
       </Card>

@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { dateKey } from "@/lib/date";
 
@@ -12,11 +14,15 @@ export function TrackingCalendar({
   monthIndex,
   trackedDays,
   todayKey,
+  onSelectDay,
 }: {
   year: number;
   monthIndex: number;
   trackedDays: Set<string>;
   todayKey: string;
+  /** Called with a day's date key (YYYY-MM-DD) when it's clicked, so the
+   * caller can open a form to register or edit that day's data. */
+  onSelectDay?: (key: string) => void;
 }) {
   const lastOfMonth = new Date(year, monthIndex + 1, 0);
   const days: Date[] = [];
@@ -45,17 +51,25 @@ export function TrackingCalendar({
           const isToday = key === todayKey;
           return (
             <div key={key} className="flex flex-col items-center gap-1">
-              <div
+              <button
+                type="button"
+                onClick={() => onSelectDay?.(key)}
+                aria-label={day.toLocaleDateString("da-DK", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
                 className={cn(
-                  "flex size-9 items-center justify-center rounded-full border text-sm tabular-nums",
+                  "flex size-9 items-center justify-center rounded-full border text-sm tabular-nums transition-colors",
                   tracked
                     ? "border-primary text-foreground"
                     : "border-muted-foreground/25 text-muted-foreground",
-                  !inMonth && "opacity-35"
+                  !inMonth && "opacity-35",
+                  onSelectDay && "cursor-pointer hover:bg-muted/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
                 )}
               >
                 {day.getDate()}
-              </div>
+              </button>
               <span
                 className={cn(
                   "size-1 rounded-full",

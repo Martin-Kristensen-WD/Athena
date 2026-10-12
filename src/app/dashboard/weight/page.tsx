@@ -7,10 +7,10 @@ import { getDb } from "@/db";
 import { metricDefinitions, metricEntries, profiles } from "@/db/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrackingCalendar } from "@/components/tracking-calendar";
 import { TrackingYearHeatmap } from "@/components/tracking-year-heatmap";
 import { TrackingStats } from "@/components/tracking-stats";
 import { WeightLogForm } from "./weight-log-form";
+import { WeightCalendarSection } from "./weight-calendar-section";
 import { WeightLogList, type WeightDayRow } from "./weight-log-list";
 import {
   averageForRange,
@@ -227,11 +227,13 @@ export default async function WeightPage({
           </div>
         </CardHeader>
         <CardContent>
-          <TrackingCalendar
+          <WeightCalendarSection
             year={year}
             monthIndex={monthIndex}
-            trackedDays={yearTrackedDays}
+            trackedDays={[...yearTrackedDays]}
             todayKey={todayKey}
+            weightUnit={weightUnit}
+            dailyValues={Object.fromEntries(dailyLatest)}
           />
         </CardContent>
       </Card>

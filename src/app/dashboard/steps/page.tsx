@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { averageForRange, dateKey, startOfWeek } from "@/lib/date";
-import { TrackingCalendar } from "@/components/tracking-calendar";
 import { TrackingYearHeatmap } from "@/components/tracking-year-heatmap";
 import { StepsLogForm } from "./steps-log-form";
 import { StepsLogList, type StepsDayRow } from "./steps-log-list";
+import { StepsCalendarSection } from "./steps-calendar-section";
 
 function parseMonthParam(month: string | undefined) {
   const now = new Date();
@@ -248,11 +248,12 @@ export default async function StepsPage({
           </div>
         </CardHeader>
         <CardContent>
-          <TrackingCalendar
+          <StepsCalendarSection
             year={year}
             monthIndex={monthIndex}
-            trackedDays={trackedDays}
+            trackedDays={[...trackedDays]}
             todayKey={todayKey}
+            dailyValues={Object.fromEntries(dailyTotals)}
           />
         </CardContent>
       </Card>
