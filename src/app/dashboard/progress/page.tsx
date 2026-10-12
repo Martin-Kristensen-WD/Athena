@@ -23,10 +23,15 @@ import { entryDayKey } from "@/lib/date";
 import { PHOTO_VIEW_LABELS } from "@/app/dashboard/measurements/constants";
 import { parseRangeParam, rangeStart } from "./range";
 import { RangeSelector } from "./range-selector";
-import { TrendChart } from "./trend-chart";
 import { DeltaBadge } from "./delta-badge";
-import { MeasurementsChart } from "./measurements-chart";
 import { PhotoCompareSlider } from "./photo-compare-slider";
+import { getStrengthData } from "./strength-queries";
+import {
+  TrendChart,
+  MeasurementsChart,
+  VolumeChart,
+  ExerciseStrength,
+} from "./charts";
 
 function formatDate(dateStr: string) {
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString("da-DK", {
@@ -58,14 +63,32 @@ export default async function ProgressPage({
       .from(metricDefinitions)
       .where(eq(metricDefinitions.key, "weight")),
     db
-      .select({ weightUnit: profiles.weightUnit })
+      .select({
+        weightUnit: profiles.weightUnit,
+        goalTargetValue: profiles.goalTargetValue,
+        milestoneTargetValue: profiles.milestoneTargetValue,
+      })
       .from(profiles)
       .where(eq(profiles.userId, userId)),
   ]);
   const weightUnit = profileRow[0]?.weightUnit ?? "kg";
+  const weightReferenceLines: { value: number; label: string }[] = [];
+  if (profileRow[0]?.milestoneTargetValue != null) {
+    weightReferenceLines.push({
+      value: Number(profileRow[0].milestoneTargetValue),
+      label: "Delmål",
+    });
+  }
+  if (profileRow[0]?.goalTargetValue != null) {
+    weightReferenceLines.push({
+      value: Number(profileRow[0].goalTargetValue),
+      label: "Slutmål",
+    });
+  }
   const directExercise = alias(exercises, "direct_exercise");
 
-  const [weightRows, measurementRows, photoRows, setRows] = await Promise.all([
+  const [weightRows, measurementRows, photoRows, setRows, strengthData] =
+    await Promise.all([
     weightDefinition[0]
       ? db
           .select({ value: metricEntries.value, loggedAt: metricEntries.loggedAt })
@@ -118,6 +141,7 @@ export default async function ProgressPage({
       .leftJoin(directExercise, eq(directExercise.id, workoutSessionSets.exerciseId))
       .where(eq(workoutSessions.userId, userId))
       .orderBy(asc(workoutSessions.startedAt)),
+    getStrengthData(userId, weightWindowStart),
   ]);
 
   // Weight trend
@@ -233,7 +257,11 @@ export default async function ProgressPage({
           <RangeSelector active={range} />
         </CardHeader>
         <CardContent>
-          <TrendChart data={weightSeries} />
+          <TrendChart
+            data={weightSeries}
+            referenceLines={weightReferenceLines}
+            movingAverageWindow={7}
+          />
         </CardContent>
       </Card>
 
@@ -336,6 +364,25 @@ export default async function ProgressPage({
               })}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-wrap items-center justify-between gap-3 space-y-0">
+          <CardTitle>Træningsvolumen</CardTitle>
+          <RangeSelector active={range} />
+        </CardHeader>
+        <CardContent>
+          <VolumeChart data={strengthData.volume} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Styrke pr. øvelse</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ExerciseStrength exercises={strengthData.exercises} />
         </CardContent>
       </Card>
     </div>

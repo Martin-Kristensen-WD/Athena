@@ -43,7 +43,7 @@ export function QuickAddFab() {
         />
       )}
 
-      <div className="fixed right-6 bottom-6 z-50 flex flex-col items-end gap-3">
+      <div className="fixed right-6 bottom-24 z-50 flex flex-col items-end gap-3 md:bottom-6">
         {QUICK_ADD_ITEMS.map((item, index) => {
           const Icon = item.icon;
           return (
@@ -64,7 +64,7 @@ export function QuickAddFab() {
               <span className="rounded-lg bg-card px-3 py-1.5 text-sm font-medium whitespace-nowrap text-foreground shadow-sm ring-1 ring-border">
                 {item.label}
               </span>
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-1 ring-border transition-transform hover:scale-105">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-button text-button-foreground shadow-md ring-1 ring-border transition-transform hover:scale-105">
                 <Icon className="size-5" />
               </span>
             </Link>
@@ -76,7 +76,7 @@ export function QuickAddFab() {
           aria-label={open ? "Luk hurtig-tilføj" : "Hurtig-tilføj"}
           aria-expanded={open}
           onClick={() => setOpen((value) => !value)}
-          className="flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
+          className="flex size-14 items-center justify-center rounded-full bg-button text-button-foreground shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
         >
           <Plus className={cn("size-6 transition-transform duration-200", open && "rotate-45")} />
         </button>

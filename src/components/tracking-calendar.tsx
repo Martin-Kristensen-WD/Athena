@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { dateKey } from "./date-utils";
+import { dateKey } from "@/lib/date";
 
 function startOfGrid(year: number, monthIndex: number) {
   const firstOfMonth = new Date(year, monthIndex, 1);
@@ -7,7 +7,7 @@ function startOfGrid(year: number, monthIndex: number) {
   return new Date(year, monthIndex, 1 - mondayIndex);
 }
 
-export function WeightCalendar({
+export function TrackingCalendar({
   year,
   monthIndex,
   trackedDays,

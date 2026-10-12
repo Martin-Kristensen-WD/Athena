@@ -15,7 +15,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/date-picker";
+import { SubmitButton, useSubmitSuccess } from "@/components/submit-button";
 import { logStepsEntrySchema, type LogStepsEntryInput } from "@/lib/validations/steps";
 import { logStepsEntry } from "./actions";
 
@@ -29,6 +30,7 @@ export function StepsLogForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
+  const { success, flashSuccess } = useSubmitSuccess();
 
   const form = useForm<
     z.input<typeof logStepsEntrySchema>,
@@ -56,6 +58,7 @@ export function StepsLogForm() {
         return;
       }
       toast.success("Skridt registreret");
+      flashSuccess();
       form.reset({
         date: toLocalDateInputValue(new Date()),
         steps: undefined,
@@ -75,7 +78,12 @@ export function StepsLogForm() {
               <FormItem>
                 <FormLabel>Dato</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <DatePicker
+                    name={field.name}
+                    value={(field.value as string) ?? ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -102,9 +110,13 @@ export function StepsLogForm() {
         </div>
         {formError && <p className="text-destructive text-sm">{formError}</p>}
         <div>
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Registrerer..." : "Registrer skridt"}
-          </Button>
+          <SubmitButton
+            pending={isPending}
+            success={success}
+            pendingLabel="Registrerer..."
+          >
+            Registrer skridt
+          </SubmitButton>
         </div>
       </form>
     </Form>

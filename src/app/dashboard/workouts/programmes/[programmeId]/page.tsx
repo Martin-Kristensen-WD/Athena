@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import { ProgrammeForm } from "../programme-form";
 import { DeleteProgrammeDialog } from "./delete-programme-dialog";
+import { ShareProgrammeDialog } from "./share-programme-dialog";
 
 export default async function ProgrammePage(
   props: PageProps<"/dashboard/workouts/programmes/[programmeId]">
@@ -46,6 +47,7 @@ export default async function ProgrammePage(
         targetWeight: programmeExercises.targetWeight,
         restSeconds: programmeExercises.restSeconds,
         notes: programmeExercises.notes,
+        supersetWithNext: programmeExercises.supersetWithNext,
       })
       .from(programmeExercises)
       .innerJoin(
@@ -93,6 +95,7 @@ export default async function ProgrammePage(
           row.targetWeight != null ? Number(row.targetWeight) : undefined,
         restSeconds: row.restSeconds ?? undefined,
         notes: row.notes ?? "",
+        supersetWithNext: row.supersetWithNext,
       })),
     })),
   };
@@ -117,8 +120,9 @@ export default async function ProgrammePage(
               />
             }
           >
-            <Play /> Start træningspas
+            <Play /> Start træning
           </Button>
+          <ShareProgrammeDialog programmeId={programme.id} />
           <DeleteProgrammeDialog programmeId={programme.id} />
         </div>
       </div>

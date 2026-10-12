@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
-  Activity,
   LayoutDashboard,
   Scale,
   Moon,
@@ -29,7 +28,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -41,16 +39,38 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { QuickAddFab } from "@/components/quick-add-fab";
+import { MobileNav } from "@/components/mobile-nav";
+import { Logo } from "@/components/logo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/food", label: "Kost", icon: Flame },
-  { href: "/dashboard/steps", label: "Skridt", icon: Footprints },
-  { href: "/dashboard/weight", label: "Vægt", icon: Scale },
-  { href: "/dashboard/measurements", label: "Målinger", icon: Ruler },
-  { href: "/dashboard/sleep", label: "Søvn", icon: Moon },
+  {
+    href: "/dashboard/food",
+    label: "Kost",
+    icon: Flame,
+    metricKeys: ["calories", "protein", "carbs", "fat"],
+  },
+  {
+    href: "/dashboard/steps",
+    label: "Skridt",
+    icon: Footprints,
+    metricKeys: ["steps"],
+  },
   { href: "/dashboard/workouts", label: "Træning", icon: Dumbbell },
-];
+  {
+    href: "/dashboard/weight",
+    label: "Vægt",
+    icon: Scale,
+    metricKeys: ["weight"],
+  },
+  {
+    href: "/dashboard/sleep",
+    label: "Søvn",
+    icon: Moon,
+    metricKeys: ["sleep_hours"],
+  },
+  { href: "/dashboard/measurements", label: "Målinger", icon: Ruler },
+] as const;
 
 type DashboardUser = {
   name?: string | null;
@@ -77,7 +97,7 @@ function UserMenu({ user }: { user: DashboardUser }) {
         render={
           <button className="flex w-full items-center gap-2.5 rounded-xl p-2 text-left outline-none transition-colors hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/50">
             <Avatar className="size-8 shrink-0 ring-1 ring-border">
-              <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">
+              <AvatarFallback className="bg-button text-xs font-semibold text-button-foreground">
                 {initials(user.name, user.email)}
               </AvatarFallback>
             </Avatar>
@@ -123,29 +143,33 @@ function UserMenu({ user }: { user: DashboardUser }) {
 
 export function DashboardShell({
   user,
+  trackedMetricKeys,
   children,
 }: {
   user: DashboardUser;
+  trackedMetricKeys?: string[];
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  const tracked = new Set(trackedMetricKeys ?? []);
+  const navItems = NAV_ITEMS.filter(
+    (item) =>
+      !("metricKeys" in item) ||
+      item.metricKeys.some((key) => tracked.has(key))
+  );
 
   return (
     <SidebarProvider>
       <Sidebar variant="floating">
         <SidebarHeader className="px-3 pt-3 pb-1">
-          <Link href="/dashboard" className="flex items-center gap-2 px-1 py-1">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Activity className="size-4.5" />
-            </span>
-            <span className="text-lg font-semibold tracking-tight text-sidebar-foreground">
-              Athena
-            </span>
+          <Link href="/dashboard" className="flex items-center px-1 py-1.5">
+            <Logo className="mx-auto h-6 w-auto" priority />
           </Link>
         </SidebarHeader>
         <SidebarContent className="px-2 pt-2">
           <SidebarMenu className="gap-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const isActive =
                 item.href === "/dashboard"
                   ? pathname === "/dashboard"
@@ -181,17 +205,20 @@ export function DashboardShell({
           <UserMenu user={user} />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="m-2 md:ml-0 rounded-2xl bg-card shadow-[0_1px_2px_rgba(22,35,28,0.04)] ring-1 ring-border">
-        <header className="flex items-center border-b border-border px-4 py-2.5 md:hidden">
-          <SidebarTrigger />
+      <SidebarInset className="m-2 md:ml-0 rounded-2xl bg-card shadow-[0_1px_2px_rgba(20,20,18,0.05)] ring-1 ring-border">
+        <header className="flex items-center justify-center border-b border-border px-4 py-2.5 md:hidden">
+          <Link href="/dashboard" aria-label="Dashboard">
+            <Logo className="h-6 w-auto" priority />
+          </Link>
         </header>
         <div
           key={pathname}
-          className="animate-in fade-in slide-in-from-bottom-2 flex-1 overflow-y-auto p-6 duration-500 md:p-8"
+          className="animate-in fade-in slide-in-from-bottom-2 flex-1 overflow-y-auto p-6 pb-24 duration-500 md:p-8 md:pb-8"
         >
           {children}
         </div>
       </SidebarInset>
+      <MobileNav navItems={navItems} user={user} />
       <QuickAddFab />
     </SidebarProvider>
   );

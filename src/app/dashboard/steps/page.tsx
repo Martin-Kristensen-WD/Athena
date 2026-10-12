@@ -13,18 +13,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { averageForRange, dateKey, startOfWeek } from "@/lib/date";
+import { TrackingCalendar } from "@/components/tracking-calendar";
+import { TrackingYearHeatmap } from "@/components/tracking-year-heatmap";
 import { StepsLogForm } from "./steps-log-form";
 import { StepsLogList, type StepsDayRow } from "./steps-log-list";
-
-const WEEKDAY_NAMES = [
-  "Søndag",
-  "Mandag",
-  "Tirsdag",
-  "Onsdag",
-  "Torsdag",
-  "Fredag",
-  "Lørdag",
-];
 
 function parseMonthParam(month: string | undefined) {
   const now = new Date();
@@ -39,7 +32,24 @@ function monthParam(year: number, monthIndex: number) {
   return `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 }
 
-function StatIcon({ icon: Icon }: { icon: typeof Trophy }) {
+function StatIcon({
+  icon: Icon,
+  tone,
+}: {
+  icon: typeof Trophy;
+  tone?: "gold";
+}) {
+  if (tone === "gold") {
+    return (
+      <span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-[#fde68a] to-[#f59e0b] text-[#4a2f00] shadow-[0_0_12px_rgba(234,179,8,0.5)]">
+        <Icon className="size-4.5" />
+        <span
+          aria-hidden
+          className="animate-shine pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-white/55 blur-[2px]"
+        />
+      </span>
+    );
+  }
   return (
     <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
       <Icon className="size-4.5" />
@@ -63,11 +73,16 @@ export default async function StepsPage({
   const { year, monthIndex } = parseMonthParam(month);
   const prevMonth = monthParam(year, monthIndex - 1);
   const nextMonth = monthParam(year, monthIndex + 1);
+  const prevYear = monthParam(year - 1, monthIndex);
+  const nextYear = monthParam(year + 1, monthIndex);
   const monthLabel = new Date(year, monthIndex, 1).toLocaleDateString("da-DK", {
     month: "long",
     year: "numeric",
   });
   const monthKeyPrefix = monthParam(year, monthIndex);
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayKey = dateKey(todayStart);
 
   const [profile, definitionRow] = await Promise.all([
     db
@@ -101,31 +116,27 @@ export default async function StepsPage({
   }
 
   let allTimeHigh: { date: string; value: number } | null = null;
-  const weekdayTotals = Array.from({ length: 7 }, () => ({ sum: 0, count: 0 }));
-
   for (const [date, value] of dailyTotals) {
     if (!allTimeHigh || value > allTimeHigh.value) {
       allTimeHigh = { date, value };
     }
-    const weekday = new Date(`${date}T00:00:00`).getDay();
-    weekdayTotals[weekday].sum += value;
-    weekdayTotals[weekday].count += 1;
   }
 
-  let bestWeekday: { name: string; average: number } | null = null;
-  for (let index = 0; index < weekdayTotals.length; index += 1) {
-    const totals = weekdayTotals[index];
-    if (totals.count === 0) continue;
-    const average = totals.sum / totals.count;
-    if (!bestWeekday || average > bestWeekday.average) {
-      bestWeekday = { name: WEEKDAY_NAMES[index], average };
-    }
-  }
+  const thisWeekStart = startOfWeek(todayStart);
+  const nextWeekStart = new Date(thisWeekStart);
+  nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+  const thisWeekAverage = averageForRange(
+    dailyTotals,
+    thisWeekStart,
+    nextWeekStart
+  );
 
   const monthRows: StepsDayRow[] = [...dailyTotals.entries()]
     .filter(([date]) => date.startsWith(monthKeyPrefix))
     .map(([date, steps]) => ({ date, steps }))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  const trackedDays = new Set(dailyTotals.keys());
 
   const dailyStepsTarget = profile[0]?.dailyStepsTarget
     ? Number(profile[0].dailyStepsTarget)
@@ -140,7 +151,7 @@ export default async function StepsPage({
             Registrer dine daglige skridt, og følg dem op mod dit mål.
           </p>
         </div>
-        <div className="flex items-center gap-3 rounded-xl bg-accent px-4 py-2.5 text-accent-foreground">
+        <div className="flex items-center gap-3 rounded-xl bg-button px-4 py-2.5 text-button-foreground">
           <Footprints className="size-4.5" />
           {dailyStepsTarget ? (
             <span className="text-sm font-medium">
@@ -149,21 +160,13 @@ export default async function StepsPage({
           ) : (
             <span className="text-sm font-medium">Intet skridtmål sat</span>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            nativeButton={false}
-            render={<Link href="/dashboard/profile" />}
-          >
-            Rediger
-          </Button>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader className="flex items-center gap-3 space-y-0">
-            <StatIcon icon={Trophy} />
+            <StatIcon icon={Trophy} tone="gold" />
             <div>
               <CardTitle>Højeste antal nogensinde</CardTitle>
               <CardDescription>
@@ -190,21 +193,23 @@ export default async function StepsPage({
           <CardHeader className="flex items-center gap-3 space-y-0">
             <StatIcon icon={CalendarDays} />
             <div>
-              <CardTitle>Bedste ugedag</CardTitle>
+              <CardTitle>Snit denne uge</CardTitle>
               <CardDescription>
-                {bestWeekday ? "Gennemsnit på denne dag" : "Ikke nok data endnu"}
+                {thisWeekAverage !== null
+                  ? "Dagligt gennemsnit"
+                  : "Ingen registreringer denne uge"}
               </CardDescription>
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold tracking-tight">
-              {bestWeekday ? bestWeekday.name : "—"}
+            <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
+              {thisWeekAverage !== null
+                ? Math.round(thisWeekAverage).toLocaleString("da-DK")
+                : "—"}{" "}
+              <span className="font-sans text-lg font-normal text-muted-foreground">
+                skridt
+              </span>
             </p>
-            {bestWeekday && (
-              <p className="font-mono text-sm text-muted-foreground tabular-nums">
-                {Math.round(bestWeekday.average).toLocaleString("da-DK")} skridt i snit
-              </p>
-            )}
           </CardContent>
         </Card>
       </div>
@@ -220,7 +225,7 @@ export default async function StepsPage({
 
       <Card>
         <CardHeader className="flex items-center justify-between space-y-0">
-          <CardTitle>{monthLabel}</CardTitle>
+          <CardTitle className="capitalize">{monthLabel}</CardTitle>
           <div className="flex items-center gap-1">
             <Button
               size="icon-sm"
@@ -243,7 +248,50 @@ export default async function StepsPage({
           </div>
         </CardHeader>
         <CardContent>
+          <TrackingCalendar
+            year={year}
+            monthIndex={monthIndex}
+            trackedDays={trackedDays}
+            todayKey={todayKey}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Registreringer</CardTitle>
+        </CardHeader>
+        <CardContent>
           <StepsLogList rows={monthRows} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex items-center justify-between space-y-0">
+          <CardTitle>{year}</CardTitle>
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon-sm"
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={`/dashboard/steps?month=${prevYear}`} />}
+            >
+              <ChevronLeft className="size-4" />
+              <span className="sr-only">Forrige år</span>
+            </Button>
+            <Button
+              size="icon-sm"
+              variant="outline"
+              nativeButton={false}
+              render={<Link href={`/dashboard/steps?month=${nextYear}`} />}
+            >
+              <ChevronRight className="size-4" />
+              <span className="sr-only">Næste år</span>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <TrackingYearHeatmap year={year} trackedDays={trackedDays} />
         </CardContent>
       </Card>
     </div>

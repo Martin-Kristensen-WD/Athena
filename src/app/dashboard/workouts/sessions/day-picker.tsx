@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowLeft, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { StartSessionButton } from "./start-session-button";
 
 export type DayOption = {
   id: string;
@@ -22,7 +23,6 @@ export function DayPicker({
   days: DayOption[];
   onBack?: () => void;
 }) {
-  const router = useRouter();
   const [selected, setSelected] = useState<string | undefined>(days[0]?.id);
 
   return (
@@ -73,18 +73,27 @@ export function DayPicker({
         })}
       </div>
 
-      <Button
-        disabled={!selected}
-        onClick={() => {
-          if (selected) {
-            router.push(
-              `/dashboard/workouts/sessions/new?programmeId=${programmeId}&dayId=${selected}`
-            );
-          }
-        }}
-      >
-        <Play /> Start træningspas
-      </Button>
+      <div className="grid gap-3">
+        <StartSessionButton
+          className="w-full"
+          disabled={!selected}
+          input={{
+            kind: "programme",
+            programmeId,
+            programmeDayId: selected ?? "",
+          }}
+        >
+          <Play /> Start træningspas
+        </StartSessionButton>
+        {selected && (
+          <Link
+            href={`/dashboard/workouts/sessions/new?programmeId=${programmeId}&dayId=${selected}&mode=manual`}
+            className="text-center text-sm text-muted-foreground underline"
+          >
+            Registrér manuelt i stedet
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

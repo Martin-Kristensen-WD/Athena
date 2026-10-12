@@ -46,12 +46,11 @@ function DeleteDayButton({ date }: { date: string }) {
     <AlertDialog>
       <AlertDialogTrigger
         render={
-          <Button size="icon-sm" variant="ghost">
-            <span className="sr-only">Slet registrering</span>
-            &times;
-          </Button>
+          <Button size="icon-sm" variant="ghost" aria-label="Slet registrering" />
         }
-      />
+      >
+        <span aria-hidden>&times;</span>
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Slet denne dags registrering?</AlertDialogTitle>

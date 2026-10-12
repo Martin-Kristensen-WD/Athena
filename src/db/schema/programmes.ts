@@ -5,6 +5,7 @@ import {
   timestamp,
   integer,
   numeric,
+  boolean,
   index,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
@@ -55,6 +56,11 @@ export const programmeExercises = pgTable(
     targetWeight: numeric("target_weight"),
     restSeconds: integer("rest_seconds"),
     notes: text("notes"),
+    // True when this exercise is performed back-to-back with the next one
+    // (by orderIndex) as a superset, with rest only after the group. Groups
+    // are derived at read time from runs of consecutive true flags, so
+    // reordering exercises never needs to touch this column.
+    supersetWithNext: boolean("superset_with_next").notNull().default(false),
   },
   (table) => [
     index("programme_exercises_day_order_idx").on(

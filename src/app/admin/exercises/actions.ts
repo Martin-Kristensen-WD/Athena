@@ -7,10 +7,11 @@ import { exercises } from "@/db/schema";
 import { auth } from "@/auth";
 import { exerciseFormSchema, type ExerciseFormInput } from "@/lib/validations/exercises";
 import { isForeignKeyViolation, isUniqueViolation } from "@/lib/db-errors";
+import { toTitleCase } from "@/lib/text";
 
 function normalize(values: ExerciseFormInput) {
   return {
-    name: values.name.trim(),
+    name: toTitleCase(values.name),
     muscleGroup: values.muscleGroup,
     equipment: values.equipment?.trim() ? values.equipment.trim() : null,
     notes: values.notes?.trim() ? values.notes.trim() : null,
@@ -52,6 +53,7 @@ export async function createSystemExercise(values: ExerciseFormInput) {
   }
 
   revalidatePath("/admin/exercises");
+  revalidatePath("/dashboard/workouts");
   return { success: true };
 }
 
@@ -86,6 +88,7 @@ export async function updateSystemExercise(
   }
 
   revalidatePath("/admin/exercises");
+  revalidatePath("/dashboard/workouts");
   return { success: true };
 }
 
@@ -113,5 +116,6 @@ export async function deleteSystemExercise(id: string) {
   }
 
   revalidatePath("/admin/exercises");
+  revalidatePath("/dashboard/workouts");
   return { success: true };
 }

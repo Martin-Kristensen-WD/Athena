@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils";
-import { dateKey } from "./date-utils";
+import { dateKey } from "@/lib/date";
 
 function monthDays(year: number, monthIndex: number) {
   const lastDate = new Date(year, monthIndex + 1, 0).getDate();
   return Array.from({ length: lastDate }, (_, i) => new Date(year, monthIndex, i + 1));
 }
 
-export function WeightYearHeatmap({
+export function TrackingYearHeatmap({
   year,
   trackedDays,
 }: {

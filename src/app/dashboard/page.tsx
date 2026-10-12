@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import {
   Flame,
   Footprints,
@@ -10,13 +10,16 @@ import {
   ArrowDown,
   ChevronRight,
   Minus,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { startOfWeek } from "@/lib/date";
 import { DashboardViewToggle } from "@/components/dashboard-view-toggle";
 import { AnimatedNumber } from "@/components/animated-number";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
+import { getActiveSessionId } from "@/app/dashboard/workouts/sessions/live-queries";
 import {
   metricDefinitions,
   metricEntries,
@@ -34,9 +37,28 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-function CardIcon({ icon: Icon }: { icon: LucideIcon }) {
+const CARD_TONES = {
+  calories:
+    "bg-orange-500/10 text-orange-600 dark:bg-orange-400/15 dark:text-orange-400",
+  steps: "bg-sky-500/10 text-sky-600 dark:bg-sky-400/15 dark:text-sky-400",
+  workouts:
+    "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-400",
+  weight:
+    "bg-violet-500/10 text-violet-600 dark:bg-violet-400/15 dark:text-violet-400",
+  sleep:
+    "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-400/15 dark:text-indigo-400",
+} as const;
+
+type CardTone = keyof typeof CARD_TONES;
+
+function CardIcon({ icon: Icon, tone }: { icon: LucideIcon; tone: CardTone }) {
   return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+    <span
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-xl",
+        CARD_TONES[tone]
+      )}
+    >
       <Icon className="size-4.5" />
     </span>
   );
@@ -86,7 +108,7 @@ function TrendBadge({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
-        sentiment === "good" && "bg-primary/10 text-primary",
+        sentiment === "good" && "bg-success/10 text-success",
         sentiment === "bad" && "bg-destructive/10 text-destructive",
         sentiment === "neutral" && "bg-muted text-muted-foreground"
       )}
@@ -105,55 +127,40 @@ type WeeklyStatData = {
   previousAverage: number | null;
 };
 
-async function getWeeklyAverage(
+// Metrics whose daily value is the latest reading of the day (weight), rather
+// than the sum of the day's entries (calories, steps, sleep hours).
+const LAST_READING_KEYS = new Set<string>(["weight"]);
+
+/**
+ * Weekly (calendar Mon–Sun) daily-average for several metrics at once, in
+ * three queries total: the definitions, the user's tracked flags, and one
+ * windowed pull of every relevant entry for both the current and previous
+ * week. Aggregation (sum vs. last reading) is applied per metric in JS.
+ */
+async function getWeeklyStats(
   db: ReturnType<typeof getDb>,
   userId: string,
-  metricDefinitionId: string,
-  windowStart: Date,
-  windowEnd: Date,
-  aggregation: "sum" | "last" = "sum"
-): Promise<number | null> {
-  const entries = await db
-    .select({ value: metricEntries.value, loggedAt: metricEntries.loggedAt })
-    .from(metricEntries)
-    .where(
-      and(
-        eq(metricEntries.userId, userId),
-        eq(metricEntries.metricDefinitionId, metricDefinitionId),
-        gte(metricEntries.loggedAt, windowStart),
-        lt(metricEntries.loggedAt, windowEnd)
-      )
-    )
-    .orderBy(asc(metricEntries.loggedAt));
+  keys: readonly string[]
+): Promise<Map<string, WeeklyStatData>> {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = startOfWeek(todayStart);
+  const lastWeekStart = new Date(weekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+  const nextWeekStart = new Date(weekStart);
+  nextWeekStart.setDate(nextWeekStart.getDate() + 7);
 
-  if (entries.length === 0) {
-    return null;
+  const result = new Map<string, WeeklyStatData>();
+  for (const key of keys) {
+    result.set(key, {
+      definition: null,
+      isTracked: false,
+      currentAverage: null,
+      previousAverage: null,
+    });
   }
 
-  const dailyValues = new Map<string, number>();
-  for (const entry of entries) {
-    const dayKey = entry.loggedAt.toISOString().slice(0, 10);
-    const value = Number(entry.value);
-    if (aggregation === "sum") {
-      dailyValues.set(dayKey, (dailyValues.get(dayKey) ?? 0) + value);
-    } else {
-      // "last": entries are ordered ascending, so later entries overwrite
-      // earlier ones within the same day, leaving the day's latest reading.
-      dailyValues.set(dayKey, value);
-    }
-  }
-
-  const values = [...dailyValues.values()];
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-async function getWeeklyStatData(
-  db: ReturnType<typeof getDb>,
-  userId: string,
-  key: string,
-  aggregation: "sum" | "last" = "sum"
-): Promise<WeeklyStatData> {
-  const [definition] = await db
+  const definitions = await db
     .select({
       id: metricDefinitions.id,
       key: metricDefinitions.key,
@@ -161,35 +168,90 @@ async function getWeeklyStatData(
       unit: metricDefinitions.unit,
     })
     .from(metricDefinitions)
-    .where(eq(metricDefinitions.key, key));
+    .where(inArray(metricDefinitions.key, keys as string[]));
 
-  if (!definition) {
-    return { definition: null, isTracked: false, currentAverage: null, previousAverage: null };
-  }
+  if (definitions.length === 0) return result;
 
-  const [tracked] = await db
-    .select({ id: userTrackedMetrics.id })
-    .from(userTrackedMetrics)
-    .where(
-      and(
-        eq(userTrackedMetrics.userId, userId),
-        eq(userTrackedMetrics.metricDefinitionId, definition.id),
-        eq(userTrackedMetrics.isEnabled, true)
+  const defById = new Map(definitions.map((def) => [def.id, def]));
+  const defIds = definitions.map((def) => def.id);
+
+  const [tracked, entries] = await Promise.all([
+    db
+      .select({ metricDefinitionId: userTrackedMetrics.metricDefinitionId })
+      .from(userTrackedMetrics)
+      .where(
+        and(
+          eq(userTrackedMetrics.userId, userId),
+          eq(userTrackedMetrics.isEnabled, true),
+          inArray(userTrackedMetrics.metricDefinitionId, defIds)
+        )
+      ),
+    db
+      .select({
+        metricDefinitionId: metricEntries.metricDefinitionId,
+        value: metricEntries.value,
+        loggedAt: metricEntries.loggedAt,
+      })
+      .from(metricEntries)
+      .where(
+        and(
+          eq(metricEntries.userId, userId),
+          inArray(metricEntries.metricDefinitionId, defIds),
+          gte(metricEntries.loggedAt, lastWeekStart),
+          lt(metricEntries.loggedAt, nextWeekStart)
+        )
       )
-    );
-
-  const [currentAverage, previousAverage] = await Promise.all([
-    getWeeklyAverage(db, userId, definition.id, daysAgo(7), new Date(), aggregation),
-    getWeeklyAverage(db, userId, definition.id, daysAgo(14), daysAgo(7), aggregation),
+      .orderBy(asc(metricEntries.loggedAt)),
   ]);
 
-  return { definition, isTracked: Boolean(tracked), currentAverage, previousAverage };
+  const trackedIds = new Set(tracked.map((row) => row.metricDefinitionId));
+
+  type DayMap = Map<string, number>;
+  const buckets = new Map<string, { current: DayMap; previous: DayMap }>();
+  for (const id of defIds) {
+    buckets.set(id, { current: new Map(), previous: new Map() });
+  }
+
+  for (const entry of entries) {
+    const bucket = buckets.get(entry.metricDefinitionId);
+    const def = defById.get(entry.metricDefinitionId);
+    if (!bucket || !def) continue;
+    const dayMap = entry.loggedAt < weekStart ? bucket.previous : bucket.current;
+    const dayKey = entry.loggedAt.toISOString().slice(0, 10);
+    const value = Number(entry.value);
+    if (LAST_READING_KEYS.has(def.key)) {
+      // entries are ordered ascending, so the last write wins for the day
+      dayMap.set(dayKey, value);
+    } else {
+      dayMap.set(dayKey, (dayMap.get(dayKey) ?? 0) + value);
+    }
+  }
+
+  const averageOf = (dayMap: DayMap): number | null => {
+    if (dayMap.size === 0) return null;
+    let sum = 0;
+    for (const value of dayMap.values()) sum += value;
+    return sum / dayMap.size;
+  };
+
+  for (const def of definitions) {
+    const bucket = buckets.get(def.id)!;
+    result.set(def.key, {
+      definition: def,
+      isTracked: trackedIds.has(def.id),
+      currentAverage: averageOf(bucket.current),
+      previousAverage: averageOf(bucket.previous),
+    });
+  }
+
+  return result;
 }
 
 function StatCard({
   href,
   title,
   icon,
+  tone,
   unit,
   data,
   sentimentFor,
@@ -197,6 +259,7 @@ function StatCard({
   href: string;
   title: string;
   icon: LucideIcon;
+  tone: CardTone;
   unit?: string;
   data: WeeklyStatData;
   sentimentFor?: (direction: Direction) => Sentiment;
@@ -211,7 +274,7 @@ function StatCard({
     return (
       <Card>
         <CardHeader className="flex items-center gap-3 space-y-0">
-          <CardIcon icon={icon} />
+          <CardIcon icon={icon} tone={tone} />
           <div>
             <CardTitle>{title}</CardTitle>
             <CardDescription>Ingen registreringer denne uge</CardDescription>
@@ -232,24 +295,34 @@ function StatCard({
     <Link href={href} className="group block">
       <Card className="transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
         <CardHeader className="flex items-center gap-3 space-y-0">
-          <CardIcon icon={icon} />
+          <CardIcon icon={icon} tone={tone} />
           <div className="min-w-0 flex-1">
             <CardTitle>{title}</CardTitle>
             <CardDescription>Dagligt gennemsnit denne uge</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="flex items-end justify-between gap-2">
-          <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
-            <AnimatedNumber
-              value={currentAverage}
-              formatOptions={{ maximumFractionDigits: 0 }}
-            />{" "}
-            {unit && (
-              <span className="font-sans text-lg font-normal text-muted-foreground">
-                {unit}
-              </span>
-            )}
-          </p>
+          <div>
+            <p className="font-mono text-3xl font-semibold tracking-tight tabular-nums">
+              <AnimatedNumber
+                value={currentAverage}
+                formatOptions={{ maximumFractionDigits: 0 }}
+              />{" "}
+              {unit && (
+                <span className="font-sans text-lg font-normal text-muted-foreground">
+                  {unit}
+                </span>
+              )}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+              Sidste uge:{" "}
+              {previousAverage !== null
+                ? `${previousAverage.toLocaleString("da-DK", {
+                    maximumFractionDigits: 0,
+                  })}${unit ? ` ${unit}` : ""}`
+                : "–"}
+            </p>
+          </div>
           {sentimentFor && (
             <TrendBadge trend={trend} sentiment={sentimentFor(trend.direction)} />
           )}
@@ -282,19 +355,14 @@ export default async function DashboardPage() {
   const db = getDb();
 
   const [
-    caloriesData,
-    stepsData,
-    weightData,
-    sleepData,
+    weeklyStats,
     latestWeight,
     profile,
     recentSessions,
     weekSessions,
+    activeSessionId,
   ] = await Promise.all([
-    getWeeklyStatData(db, userId, "calories"),
-    getWeeklyStatData(db, userId, "steps"),
-    getWeeklyStatData(db, userId, "weight", "last"),
-    getWeeklyStatData(db, userId, "sleep_hours"),
+    getWeeklyStats(db, userId, ["calories", "steps", "weight", "sleep_hours"]),
     db
       .select({ value: metricEntries.value })
       .from(metricEntries)
@@ -331,7 +399,13 @@ export default async function DashboardPage() {
           gte(workoutSessions.startedAt, daysAgo(7))
         )
       ),
+    getActiveSessionId(userId),
   ]);
+
+  const caloriesData = weeklyStats.get("calories")!;
+  const stepsData = weeklyStats.get("steps")!;
+  const weightData = weeklyStats.get("weight")!;
+  const sleepData = weeklyStats.get("sleep_hours")!;
 
   const lastSession = recentSessions[0] ?? null;
   const sessionsThisWeek = weekSessions.length;
@@ -367,6 +441,28 @@ export default async function DashboardPage() {
             {progressText ??
               "Registrer din vægt, og sæt et mål under opsætning for at følge din udvikling her."}
           </p>
+          {(milestoneTarget !== null || goalTarget !== null) && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm">
+              {milestoneTarget !== null && (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Trophy className="size-4" />
+                  Delmål
+                  <span className="font-medium text-foreground tabular-nums">
+                    {milestoneTarget.toLocaleString("da-DK")} {weightUnit}
+                  </span>
+                </span>
+              )}
+              {goalTarget !== null && (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Trophy className="size-4 text-[#eab308]" />
+                  Slutmål
+                  <span className="font-medium text-foreground tabular-nums">
+                    {goalTarget.toLocaleString("da-DK")} {weightUnit}
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <DashboardViewToggle active="main" />
       </div>
@@ -376,6 +472,7 @@ export default async function DashboardPage() {
           href="/dashboard/food"
           title="Kalorieindtag"
           icon={Flame}
+          tone="calories"
           unit="kcal"
           data={caloriesData}
           sentimentFor={(direction) => {
@@ -393,6 +490,7 @@ export default async function DashboardPage() {
           href="/dashboard/steps"
           title="Skridt"
           icon={Footprints}
+          tone="steps"
           data={stepsData}
           sentimentFor={(direction) => {
             if (direction === "up") return "good";
@@ -404,6 +502,7 @@ export default async function DashboardPage() {
           href="/dashboard/weight"
           title="Vægt"
           icon={Scale}
+          tone="weight"
           unit={weightUnit}
           data={weightData}
           sentimentFor={(direction) => {
@@ -421,20 +520,35 @@ export default async function DashboardPage() {
           href="/dashboard/sleep"
           title="Søvn"
           icon={Moon}
+          tone="sleep"
           unit="timer"
           data={sleepData}
         />
 
-        <Link href="/dashboard/workouts" className="group block">
-          <Card className="transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
+        <Link
+          href={
+            activeSessionId
+              ? `/dashboard/workouts/sessions/${activeSessionId}/live`
+              : "/dashboard/workouts"
+          }
+          className="group block"
+        >
+          <Card
+            className={cn(
+              "transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md",
+              activeSessionId && "border-primary/40 bg-primary/5"
+            )}
+          >
             <CardHeader className="flex items-center gap-3 space-y-0">
-              <CardIcon icon={Dumbbell} />
+              <CardIcon icon={Dumbbell} tone="workouts" />
               <div className="min-w-0 flex-1">
                 <CardTitle>Træning</CardTitle>
                 <CardDescription className="truncate">
-                  {lastSession
-                    ? `Seneste træning ${lastSession.startedAt.toLocaleDateString("da-DK")}`
-                    : "Ingen træning registreret endnu"}
+                  {activeSessionId
+                    ? "Træningspas i gang – fortsæt"
+                    : lastSession
+                      ? `Seneste træning ${lastSession.startedAt.toLocaleDateString("da-DK")}`
+                      : "Ingen træning registreret endnu"}
                 </CardDescription>
               </div>
               <CardAction>

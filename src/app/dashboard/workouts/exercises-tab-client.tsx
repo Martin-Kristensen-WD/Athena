@@ -2,7 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Copy } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Copy,
+  Search,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -21,6 +29,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,13 +49,20 @@ import {
   type ExerciseFormInput,
 } from "@/lib/validations/exercises";
 import type { exercises } from "@/db/schema";
-import { createExercise, deleteExercise, updateExercise } from "./exercises-actions";
+import {
+  createExercise,
+  deleteExercise,
+  updateCatalogExercise,
+  updateExercise,
+} from "./exercises-actions";
 
 type ExerciseRow = typeof exercises.$inferSelect;
 
 const MUSCLE_GROUP_LABELS: Record<string, string> = Object.fromEntries(
   MUSCLE_GROUP_OPTIONS.map((option) => [option.value, option.label])
 );
+
+const CATALOG_PREVIEW_COUNT = 10;
 
 export function ExercisesTabClient({
   myExercises,
@@ -53,25 +73,38 @@ export function ExercisesTabClient({
 }) {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<ExerciseRow | null>(null);
+  const [catalogEditing, setCatalogEditing] = useState<ExerciseRow | null>(null);
   const [cloneDefaults, setCloneDefaults] =
     useState<Partial<ExerciseFormInput> | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ExerciseRow | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [catalogQuery, setCatalogQuery] = useState("");
+  const [catalogExpanded, setCatalogExpanded] = useState(false);
 
   function openCreate() {
     setEditing(null);
+    setCatalogEditing(null);
     setCloneDefaults(null);
     setFormOpen(true);
   }
 
   function openEdit(exercise: ExerciseRow) {
     setEditing(exercise);
+    setCatalogEditing(null);
+    setCloneDefaults(null);
+    setFormOpen(true);
+  }
+
+  function openEditCatalog(exercise: ExerciseRow) {
+    setEditing(null);
+    setCatalogEditing(exercise);
     setCloneDefaults(null);
     setFormOpen(true);
   }
 
   function openClone(exercise: ExerciseRow) {
     setEditing(null);
+    setCatalogEditing(null);
     setCloneDefaults({
       name: exercise.name,
       muscleGroup: exercise.muscleGroup,
@@ -84,9 +117,11 @@ export function ExercisesTabClient({
   async function handleSubmit(values: ExerciseFormInput) {
     const result = editing
       ? await updateExercise(editing.id, values)
-      : await createExercise(values);
+      : catalogEditing
+        ? await updateCatalogExercise(catalogEditing.id, values)
+        : await createExercise(values);
     if (!result?.error) {
-      toast.success(editing ? "Øvelse opdateret" : "Øvelse oprettet");
+      toast.success(editing || catalogEditing ? "Øvelse opdateret" : "Øvelse oprettet");
     }
     return result;
   }
@@ -112,7 +147,33 @@ export function ExercisesTabClient({
         equipment: editing.equipment ?? "",
         notes: editing.notes ?? "",
       }
-    : (cloneDefaults ?? undefined);
+    : catalogEditing
+      ? {
+          name: catalogEditing.name,
+          muscleGroup: catalogEditing.muscleGroup,
+          equipment: catalogEditing.equipment ?? "",
+          notes: catalogEditing.notes ?? "",
+        }
+      : (cloneDefaults ?? undefined);
+
+  const catalogSearch = catalogQuery.trim().toLowerCase();
+  const filteredCatalog = catalogSearch
+    ? catalogExercises.filter(
+        (exercise) =>
+          exercise.name.toLowerCase().includes(catalogSearch) ||
+          (MUSCLE_GROUP_LABELS[exercise.muscleGroup] ?? exercise.muscleGroup)
+            .toLowerCase()
+            .includes(catalogSearch) ||
+          (exercise.equipment ?? "").toLowerCase().includes(catalogSearch)
+      )
+    : catalogExercises;
+  const showAllCatalog = catalogSearch.length > 0 || catalogExpanded;
+  const visibleCatalog = showAllCatalog
+    ? filteredCatalog
+    : filteredCatalog.slice(0, CATALOG_PREVIEW_COUNT);
+  const canExpandCatalog =
+    catalogSearch.length === 0 &&
+    filteredCatalog.length > CATALOG_PREVIEW_COUNT;
 
   return (
     <div className="grid gap-6">
@@ -186,50 +247,102 @@ export function ExercisesTabClient({
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Katalog</CardTitle>
-          <CardDescription>
-            Systemøvelser. Klon en for at oprette din egen redigerbare kopi.
-          </CardDescription>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="grid gap-1">
+            <CardTitle>Katalog</CardTitle>
+            <CardDescription>
+              Systemøvelser. Klon en for at oprette din egen redigerbare kopi.
+            </CardDescription>
+          </div>
+          <InputGroup className="sm:w-64">
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Søg i kataloget"
+              aria-label="Søg i kataloget"
+              value={catalogQuery}
+              onChange={(event) => setCatalogQuery(event.target.value)}
+            />
+          </InputGroup>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Navn</TableHead>
-                <TableHead>Muskelgruppe</TableHead>
-                <TableHead>Udstyr</TableHead>
-                <TableHead className="text-right">Handlinger</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {catalogExercises.map((exercise) => (
-                <TableRow key={exercise.id}>
-                  <TableCell className="font-medium">
-                    {exercise.name}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {MUSCLE_GROUP_LABELS[exercise.muscleGroup] ??
-                        exercise.muscleGroup}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {exercise.equipment ?? "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openClone(exercise)}
-                    >
-                      <Copy /> Klon
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {filteredCatalog.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              {catalogSearch
+                ? `Ingen øvelser i kataloget matcher "${catalogQuery.trim()}".`
+                : "Kataloget er tomt."}
+            </p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Navn</TableHead>
+                    <TableHead>Muskelgruppe</TableHead>
+                    <TableHead>Udstyr</TableHead>
+                    <TableHead className="text-right">Handlinger</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleCatalog.map((exercise) => (
+                    <TableRow key={exercise.id}>
+                      <TableCell className="font-medium">
+                        {exercise.name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {MUSCLE_GROUP_LABELS[exercise.muscleGroup] ??
+                            exercise.muscleGroup}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {exercise.equipment ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => openEditCatalog(exercise)}
+                          >
+                            <Pencil />
+                            <span className="sr-only">Rediger</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openClone(exercise)}
+                          >
+                            <Copy /> Klon
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {canExpandCatalog && (
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCatalogExpanded((value) => !value)}
+                  >
+                    {catalogExpanded ? (
+                      <>
+                        <ChevronUp /> Vis færre
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown /> Vis alle {filteredCatalog.length}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -239,17 +352,21 @@ export function ExercisesTabClient({
         title={
           editing
             ? "Rediger øvelse"
-            : cloneDefaults
-              ? "Klon øvelse"
-              : "Tilføj øvelse"
+            : catalogEditing
+              ? "Rediger katalogøvelse"
+              : cloneDefaults
+                ? "Klon øvelse"
+                : "Tilføj øvelse"
         }
         description={
-          cloneDefaults && !editing
-            ? "Gem din egen redigerbare kopi af denne katalogøvelse."
-            : undefined
+          catalogEditing
+            ? "Denne øvelse er delt med alle brugere. Ændringer påvirker, hvad alle ser."
+            : cloneDefaults && !editing
+              ? "Gem din egen redigerbare kopi af denne katalogøvelse."
+              : undefined
         }
         defaultValues={dialogDefaults}
-        submitLabel={editing ? "Gem ændringer" : "Opret"}
+        submitLabel={editing || catalogEditing ? "Gem ændringer" : "Opret"}
         onSubmit={handleSubmit}
       />
 

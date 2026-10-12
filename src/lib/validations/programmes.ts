@@ -19,6 +19,7 @@ export const programmeExerciseSchema = z.object({
   targetWeight: optionalCoercedNumber(z.coerce.number().positive("Indtast en gyldig vægt")),
   restSeconds: optionalCoercedNumber(z.coerce.number().int().nonnegative("Indtast en gyldig varighed")),
   notes: z.string().optional(),
+  supersetWithNext: z.boolean().optional(),
 });
 
 export const programmeDaySchema = z.object({

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ProgrammeStartPicker, type ProgrammeOption } from "../programme-start-picker";
 import { DayPicker } from "../day-picker";
 import { SessionLogForm } from "../session-log-form";
+import { getActiveSessionId } from "../live-queries";
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -31,6 +32,13 @@ export default async function NewSessionPage(
   const searchParams = await props.searchParams;
   const programmeIdParam = firstParam(searchParams.programmeId);
   const dayIdParam = firstParam(searchParams.dayId);
+  const manual = firstParam(searchParams.mode) === "manual";
+
+  // Resume an in-progress session rather than letting the user start a second.
+  const activeSessionId = await getActiveSessionId(session.user.id);
+  if (activeSessionId && !manual) {
+    redirect(`/dashboard/workouts/sessions/${activeSessionId}/live`);
+  }
 
   const db = getDb();
 
@@ -251,21 +259,28 @@ export default async function NewSessionPage(
     );
   }
 
-  return (
-    <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Registrer træningspas: {programme.name} — {day.name}
-      </h1>
-      <p className="text-muted-foreground mt-1">
-        Indtast hvad du faktisk lavede for hvert sæt.
-      </p>
-      <div className="mt-6">
-        <SessionLogForm
-          programmeId={programme.id}
-          programmeDayId={day.id}
-          exercises={plannedExercises}
-        />
+  if (manual) {
+    return (
+      <div className="max-w-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Registrer træningspas: {programme.name} — {day.name}
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Indtast hvad du faktisk lavede for hvert sæt.
+        </p>
+        <div className="mt-6">
+          <SessionLogForm
+            programmeId={programme.id}
+            programmeDayId={day.id}
+            exercises={plannedExercises}
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // The day is chosen — starting a live session is handled inline by the day
+  // picker now, so there is no interstitial "preview" step. A stale link that
+  // lands here without `mode=manual` goes back to the day picker.
+  redirect(`/dashboard/workouts/sessions/new?programmeId=${programme.id}`);
 }

@@ -3,9 +3,10 @@
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/date-picker";
+import { SubmitButton, useSubmitSuccess } from "@/components/submit-button";
 import { MEASUREMENT_TYPES, PROGRESS_PHOTO_VIEWS, type ProgressPhotoView } from "@/db/schema";
 import { MEASUREMENT_LABELS, MEASUREMENT_UNIT, PHOTO_VIEW_LABELS } from "./constants";
 import { logMeasurements } from "./actions";
@@ -58,6 +59,8 @@ export function MeasurementsLogForm() {
   const [isPending, startTransition] = useTransition();
   const [formError, setFormError] = useState<string | null>(null);
   const [resetKey, setResetKey] = useState(0);
+  const [date, setDate] = useState(() => toLocalDateInputValue(new Date()));
+  const { success, flashSuccess } = useSubmitSuccess();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +73,9 @@ export function MeasurementsLogForm() {
         return;
       }
       toast.success("Registrering gemt");
+      flashSuccess();
       formRef.current?.reset();
+      setDate(toLocalDateInputValue(new Date()));
       setResetKey((key) => key + 1);
       router.refresh();
     });
@@ -78,13 +83,13 @@ export function MeasurementsLogForm() {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="grid gap-6">
-      <div className="max-w-48">
+      <div className="max-w-52">
         <Label htmlFor="date">Dato</Label>
-        <Input
+        <DatePicker
           id="date"
           name="date"
-          type="date"
-          defaultValue={toLocalDateInputValue(new Date())}
+          value={date}
+          onChange={setDate}
           className="mt-2"
         />
       </div>
@@ -116,9 +121,13 @@ export function MeasurementsLogForm() {
       {formError && <p className="text-destructive text-sm">{formError}</p>}
 
       <div>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Gemmer..." : "Gem registrering"}
-        </Button>
+        <SubmitButton
+          pending={isPending}
+          success={success}
+          pendingLabel="Gemmer..."
+        >
+          Gem registrering
+        </SubmitButton>
       </div>
     </form>
   );
