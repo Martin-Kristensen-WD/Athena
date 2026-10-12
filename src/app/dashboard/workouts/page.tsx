@@ -37,7 +37,7 @@ export default async function WorkoutsPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Træning</h1>
       <Tabs defaultValue="programmes" className="mt-6">
-        <TabsList className="h-auto w-full flex-nowrap justify-start gap-2 overflow-x-auto bg-transparent p-0 pb-1">
+        <TabsList className="h-auto w-full flex-nowrap justify-start gap-2 overflow-x-auto overflow-y-visible bg-transparent p-0 pt-1 pb-1">
           <TabsTrigger value="programmes" className={tabButton}>
             Programmer
           </TabsTrigger>
