@@ -579,7 +579,7 @@ export function LiveSessionLogger({
   }
 
   const title = session.isFree
-    ? "Frit træningspas"
+    ? session.name ?? "Frit træningspas"
     : session.programmeDayName
       ? `${session.programmeName} — ${session.programmeDayName}`
       : session.programmeName ?? "Træningspas";
@@ -591,8 +591,12 @@ export function LiveSessionLogger({
 
   return (
     <div className="mx-auto max-w-2xl pb-28">
-      <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-4 border-b border-border bg-card/95 backdrop-blur md:-mx-8 md:-mt-8">
-        <div className="flex items-center gap-3 px-6 py-3 md:px-8">
+      <div className="sticky top-0 z-20 -mx-6 -mt-6 mb-4 md:-mx-8 md:-mt-8">
+        {/* Separate layer for the translucent/blurred background: some
+            browsers (notably iOS Safari) fail to keep a sticky element
+            pinned when backdrop-filter is applied directly to it. */}
+        <div className="absolute inset-0 -z-10 border-b border-border bg-card/95 backdrop-blur" />
+        <div className="relative flex items-center gap-3 px-6 py-3 md:px-8">
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{title}</p>
             <p className="text-xs text-muted-foreground tabular-nums">
@@ -615,7 +619,7 @@ export function LiveSessionLogger({
         </div>
 
         {groups.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto px-6 pt-2 pb-3 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="relative flex gap-2 overflow-x-auto px-6 pt-2 pb-3 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {groups.map((group) => {
               const done = group.sets.filter((set) => set.done).length;
               const complete = done > 0 && done === group.sets.length;
