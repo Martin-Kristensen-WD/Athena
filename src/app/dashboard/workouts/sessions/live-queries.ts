@@ -52,6 +52,8 @@ export type LiveExercise = {
     date: string;
     sets: { reps: number | null; weight: string | null }[];
   } | null;
+  /** Heaviest set ever logged for this exercise, across all sessions. */
+  allTimeBest: ExerciseAllTimeBest | null;
   sets: LiveSet[];
 };
 
@@ -82,19 +84,23 @@ export async function getActiveSessionId(userId: string) {
   return row?.id ?? null;
 }
 
+export type ExerciseAllTimeBest = { weight: number; reps: number; date: string };
+
 /**
- * For each of `exerciseIds`, the sets from that exercise's most recent
- * *completed* session — the progressive-overload cue shown next to each input.
+ * For each of `exerciseIds`, across all *completed* sessions: the sets from
+ * the most recent session (the progressive-overload cue shown next to each
+ * input) and the heaviest set ever logged (the trophy popup's all-time PR).
  */
-export async function getLastPerformance(
+export async function getExerciseHistory(
   userId: string,
   exerciseIds: string[]
 ) {
-  const result = new Map<
+  const last = new Map<
     string,
     { date: string; sets: { reps: number | null; weight: string | null }[] }
   >();
-  if (exerciseIds.length === 0) return result;
+  const allTimeBest = new Map<string, ExerciseAllTimeBest>();
+  if (exerciseIds.length === 0) return { last, allTimeBest };
 
   const db = getDb();
   const resolvedExerciseId = sql<string>`coalesce(${workoutSessionSets.exerciseId}, ${programmeExercises.exerciseId})`;
@@ -130,26 +136,40 @@ export async function getLastPerformance(
     .orderBy(desc(workoutSessions.startedAt), asc(workoutSessionSets.setIndex));
 
   // Rows arrive newest-session-first. The first row seen for an exercise fixes
-  // which session counts as "last time"; rows from older sessions are skipped.
+  // which session counts as "last time"; rows from older sessions are skipped
+  // for `last`, but every row still counts toward the all-time best.
   const chosenSession = new Map<string, string>();
   for (const row of rows) {
     if (!row.exerciseId) continue;
+
+    if (row.weight !== null) {
+      const weight = Number(row.weight);
+      const best = allTimeBest.get(row.exerciseId);
+      if (!best || weight > best.weight) {
+        allTimeBest.set(row.exerciseId, {
+          weight,
+          reps: row.reps ?? 0,
+          date: row.startedAt.toISOString().slice(0, 10),
+        });
+      }
+    }
+
     if (!chosenSession.has(row.exerciseId)) {
       chosenSession.set(row.exerciseId, row.sessionId);
     }
     if (chosenSession.get(row.exerciseId) !== row.sessionId) continue;
 
     const entry =
-      result.get(row.exerciseId) ??
+      last.get(row.exerciseId) ??
       ({
         date: row.startedAt.toISOString().slice(0, 10),
         sets: [] as { reps: number | null; weight: string | null }[],
       });
     entry.sets.push({ reps: row.reps, weight: row.weight });
-    result.set(row.exerciseId, entry);
+    last.set(row.exerciseId, entry);
   }
 
-  return result;
+  return { last, allTimeBest };
 }
 
 /**
@@ -256,6 +276,7 @@ export async function loadLiveSession(
         restSeconds: p.restSeconds,
       },
       last: null,
+      allTimeBest: null,
       sets: [],
     });
   }
@@ -288,6 +309,7 @@ export async function loadLiveSession(
         order: extraOrder++,
         target: null,
         last: null,
+        allTimeBest: null,
         sets: [],
       };
       groups.set(key, group);
@@ -318,12 +340,14 @@ export async function loadLiveSession(
   const exerciseIds = [
     ...new Set(list.map((g) => g.exerciseId).filter(Boolean)),
   ];
-  const lastByExercise = await getLastPerformance(userId, exerciseIds);
+  const { last: lastByExercise, allTimeBest: allTimeBestByExercise } =
+    await getExerciseHistory(userId, exerciseIds);
   for (const group of list) {
-    const last = group.exerciseId
-      ? lastByExercise.get(group.exerciseId)
-      : undefined;
+    if (!group.exerciseId) continue;
+    const last = lastByExercise.get(group.exerciseId);
     if (last) group.last = last;
+    const best = allTimeBestByExercise.get(group.exerciseId);
+    if (best) group.allTimeBest = best;
   }
 
   const noteRows = await db
