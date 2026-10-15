@@ -10,6 +10,7 @@ import {
   workoutSessionExerciseNotes,
   workoutSessionSets,
 } from "@/db/schema";
+import { round1, setOneRepMax } from "@/lib/strength";
 
 // Fallback rest when a programme exercise has no `restSeconds`, and for
 // freeform sessions where there is no plan to read it from.
@@ -52,6 +53,8 @@ export type LiveExercise = {
     date: string;
     sets: { reps: number | null; weight: string | null }[];
   } | null;
+  /** Heaviest set ever logged for this exercise, across all sessions. */
+  allTimeBest: ExerciseAllTimeBest | null;
   sets: LiveSet[];
 };
 
@@ -82,19 +85,23 @@ export async function getActiveSessionId(userId: string) {
   return row?.id ?? null;
 }
 
+export type ExerciseAllTimeBest = { weight: number; reps: number; date: string };
+
 /**
- * For each of `exerciseIds`, the sets from that exercise's most recent
- * *completed* session — the progressive-overload cue shown next to each input.
+ * For each of `exerciseIds`, across all *completed* sessions: the sets from
+ * the most recent session (the progressive-overload cue shown next to each
+ * input) and the heaviest set ever logged (the trophy popup's all-time PR).
  */
-export async function getLastPerformance(
+export async function getExerciseHistory(
   userId: string,
   exerciseIds: string[]
 ) {
-  const result = new Map<
+  const last = new Map<
     string,
     { date: string; sets: { reps: number | null; weight: string | null }[] }
   >();
-  if (exerciseIds.length === 0) return result;
+  const allTimeBest = new Map<string, ExerciseAllTimeBest>();
+  if (exerciseIds.length === 0) return { last, allTimeBest };
 
   const db = getDb();
   const resolvedExerciseId = sql<string>`coalesce(${workoutSessionSets.exerciseId}, ${programmeExercises.exerciseId})`;
@@ -130,26 +137,157 @@ export async function getLastPerformance(
     .orderBy(desc(workoutSessions.startedAt), asc(workoutSessionSets.setIndex));
 
   // Rows arrive newest-session-first. The first row seen for an exercise fixes
-  // which session counts as "last time"; rows from older sessions are skipped.
+  // which session counts as "last time"; rows from older sessions are skipped
+  // for `last`, but every row still counts toward the all-time best.
   const chosenSession = new Map<string, string>();
   for (const row of rows) {
     if (!row.exerciseId) continue;
+
+    if (row.weight !== null) {
+      const weight = Number(row.weight);
+      const best = allTimeBest.get(row.exerciseId);
+      if (!best || weight > best.weight) {
+        allTimeBest.set(row.exerciseId, {
+          weight,
+          reps: row.reps ?? 0,
+          date: row.startedAt.toISOString().slice(0, 10),
+        });
+      }
+    }
+
     if (!chosenSession.has(row.exerciseId)) {
       chosenSession.set(row.exerciseId, row.sessionId);
     }
     if (chosenSession.get(row.exerciseId) !== row.sessionId) continue;
 
     const entry =
-      result.get(row.exerciseId) ??
+      last.get(row.exerciseId) ??
       ({
         date: row.startedAt.toISOString().slice(0, 10),
         sets: [] as { reps: number | null; weight: string | null }[],
       });
     entry.sets.push({ reps: row.reps, weight: row.weight });
-    result.set(row.exerciseId, entry);
+    last.set(row.exerciseId, entry);
   }
 
-  return result;
+  return { last, allTimeBest };
+}
+
+export type ExerciseSessionLog = {
+  sessionId: string;
+  date: string;
+  sets: { reps: number | null; weight: string | null }[];
+};
+
+export type ExerciseFullHistory = {
+  allTimeBest: ExerciseAllTimeBest | null;
+  /** Total sets ever logged for this exercise, across all sessions. */
+  totalSets: number;
+  /** Number of distinct completed sessions this exercise was logged in. */
+  sessionCount: number;
+  /** Best estimated 1RM per session date, ascending — the progress graph. */
+  oneRmSeries: { date: string; value: number }[];
+  /** Most recent sessions, newest first. */
+  recent: ExerciseSessionLog[];
+};
+
+const RECENT_SESSIONS_LIMIT = 3;
+
+/**
+ * One exercise's full history for the catalog's stats popup: all-time PR,
+ * how many sessions it's been logged in, its estimated-1RM trend, and the
+ * most recent sessions.
+ */
+export async function getExerciseFullHistory(
+  userId: string,
+  exerciseId: string
+): Promise<ExerciseFullHistory> {
+  const db = getDb();
+
+  const rows = await db
+    .select({
+      sessionId: workoutSessionSets.sessionId,
+      startedAt: workoutSessions.startedAt,
+      setIndex: workoutSessionSets.setIndex,
+      reps: workoutSessionSets.reps,
+      weight: workoutSessionSets.weight,
+    })
+    .from(workoutSessionSets)
+    .innerJoin(
+      workoutSessions,
+      eq(workoutSessions.id, workoutSessionSets.sessionId)
+    )
+    .leftJoin(
+      programmeExercises,
+      eq(programmeExercises.id, workoutSessionSets.programmeExerciseId)
+    )
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        eq(workoutSessions.status, "completed"),
+        or(
+          eq(workoutSessionSets.exerciseId, exerciseId),
+          eq(programmeExercises.exerciseId, exerciseId)
+        )
+      )
+    )
+    .orderBy(desc(workoutSessions.startedAt), asc(workoutSessionSets.setIndex));
+
+  if (rows.length === 0) {
+    return {
+      allTimeBest: null,
+      totalSets: 0,
+      sessionCount: 0,
+      oneRmSeries: [],
+      recent: [],
+    };
+  }
+
+  // Rows arrive newest-session-first; group them into per-session logs while
+  // keeping that order, and track the heaviest set and best estimated 1RM
+  // seen along the way.
+  const sessionOrder: string[] = [];
+  const bySession = new Map<string, ExerciseSessionLog>();
+  const bestOneRmByDate = new Map<string, number>();
+  let allTimeBest: ExerciseAllTimeBest | null = null;
+
+  for (const row of rows) {
+    const date = row.startedAt.toISOString().slice(0, 10);
+
+    let log = bySession.get(row.sessionId);
+    if (!log) {
+      log = { sessionId: row.sessionId, date, sets: [] };
+      bySession.set(row.sessionId, log);
+      sessionOrder.push(row.sessionId);
+    }
+    log.sets.push({ reps: row.reps, weight: row.weight });
+
+    const weight = row.weight !== null ? Number(row.weight) : null;
+
+    if (weight !== null && (!allTimeBest || weight > allTimeBest.weight)) {
+      allTimeBest = { weight, reps: row.reps ?? 0, date };
+    }
+
+    const oneRm = setOneRepMax({ weight, reps: row.reps });
+    if (oneRm !== null) {
+      const prior = bestOneRmByDate.get(date) ?? 0;
+      if (oneRm > prior) bestOneRmByDate.set(date, oneRm);
+    }
+  }
+
+  const sessionLogs = sessionOrder.map((id) => bySession.get(id)!); // newest first
+  const recent = sessionLogs.slice(0, RECENT_SESSIONS_LIMIT);
+  const oneRmSeries = [...bestOneRmByDate.entries()]
+    .map(([date, value]) => ({ date, value: round1(value) }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+
+  return {
+    allTimeBest,
+    totalSets: rows.length,
+    sessionCount: sessionLogs.length,
+    oneRmSeries,
+    recent,
+  };
 }
 
 /**
@@ -256,6 +394,7 @@ export async function loadLiveSession(
         restSeconds: p.restSeconds,
       },
       last: null,
+      allTimeBest: null,
       sets: [],
     });
   }
@@ -288,6 +427,7 @@ export async function loadLiveSession(
         order: extraOrder++,
         target: null,
         last: null,
+        allTimeBest: null,
         sets: [],
       };
       groups.set(key, group);
@@ -318,12 +458,14 @@ export async function loadLiveSession(
   const exerciseIds = [
     ...new Set(list.map((g) => g.exerciseId).filter(Boolean)),
   ];
-  const lastByExercise = await getLastPerformance(userId, exerciseIds);
+  const { last: lastByExercise, allTimeBest: allTimeBestByExercise } =
+    await getExerciseHistory(userId, exerciseIds);
   for (const group of list) {
-    const last = group.exerciseId
-      ? lastByExercise.get(group.exerciseId)
-      : undefined;
+    if (!group.exerciseId) continue;
+    const last = lastByExercise.get(group.exerciseId);
     if (last) group.last = last;
+    const best = allTimeBestByExercise.get(group.exerciseId);
+    if (best) group.allTimeBest = best;
   }
 
   const noteRows = await db

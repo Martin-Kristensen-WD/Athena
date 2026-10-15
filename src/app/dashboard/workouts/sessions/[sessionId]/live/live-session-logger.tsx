@@ -12,6 +12,7 @@ import {
   NotebookPen,
   Plus,
   Trash2,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +55,7 @@ import {
   swapSessionExercise,
 } from "../../actions";
 import { RestTimer } from "./rest-timer";
+import { ExerciseStatsDialog } from "@/components/exercise-stats-dialog";
 
 type SetRow = {
   id: string;
@@ -75,6 +77,7 @@ type Group = {
   note: string | null;
   target: LiveSession["exercises"][number]["target"];
   last: LiveSession["exercises"][number]["last"];
+  allTimeBest: LiveSession["exercises"][number]["allTimeBest"];
   sets: SetRow[];
 };
 
@@ -90,6 +93,7 @@ function toGroups(session: LiveSession): Group[] {
     note: exercise.note,
     target: exercise.target,
     last: exercise.last,
+    allTimeBest: exercise.allTimeBest,
     sets: exercise.sets.map((set) => ({
       id: set.id,
       setIndex: set.setIndex,
@@ -173,6 +177,7 @@ export function LiveSessionLogger({
   const [sheet, setSheet] = useState<SheetState>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [statsKey, setStatsKey] = useState<string | null>(null);
 
   const [activeKey, setActiveKey] = useState<string | null>(
     () => groups[0]?.key ?? null
@@ -443,6 +448,7 @@ export function LiveSessionLogger({
         note: null,
         target: null,
         last: null,
+        allTimeBest: null,
         sets: [
           {
             id: result.setId,
@@ -530,6 +536,10 @@ export function LiveSessionLogger({
     setSheet({ kind: "info", key: group.key });
   }
 
+  function openStats(group: Group) {
+    setStatsKey(group.key);
+  }
+
   function openNote(group: Group) {
     setNoteDraft(group.note ?? "");
     setSheet({ kind: "note", key: group.key });
@@ -588,6 +598,17 @@ export function LiveSessionLogger({
     (total, group) => total + group.sets.filter((set) => set.done).length,
     0
   );
+
+  const statsGroup = statsKey
+    ? groups.find((group) => group.key === statsKey)
+    : null;
+  const statsExercise = statsGroup
+    ? {
+        name: statsGroup.name,
+        allTimeBest: statsGroup.allTimeBest,
+        last: statsGroup.last,
+      }
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl pb-28">
@@ -706,6 +727,16 @@ export function LiveSessionLogger({
                   onClick={() => openNote(group)}
                 >
                   <NotebookPen /> Note
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 shrink-0"
+                  onClick={() => openStats(group)}
+                  aria-label={`Statistik for ${group.name}`}
+                >
+                  <Trophy />
                 </Button>
               </div>
             </div>
@@ -1103,6 +1134,11 @@ export function LiveSessionLogger({
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <ExerciseStatsDialog
+        exercise={statsExercise}
+        onOpenChange={(open) => !open && setStatsKey(null)}
+      />
     </div>
   );
 }

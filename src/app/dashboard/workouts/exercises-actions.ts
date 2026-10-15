@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { exerciseFormSchema, type ExerciseFormInput } from "@/lib/validations/exercises";
 import { isForeignKeyViolation, isUniqueViolation } from "@/lib/db-errors";
 import { toTitleCase } from "@/lib/text";
+import { getExerciseFullHistory } from "./sessions/live-queries";
 
 function normalize(values: ExerciseFormInput) {
   return {
@@ -127,6 +128,19 @@ export async function updateCatalogExercise(id: string, values: ExerciseFormInpu
   revalidatePath("/dashboard/workouts");
   revalidatePath("/admin/exercises");
   return { success: true };
+}
+
+/** An exercise's full history for the trophy stats popup on the exercise
+ * catalog: all-time PR, how often it's been trained, and its first and most
+ * recent sessions. */
+export async function getExerciseStats(exerciseId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Du skal være logget ind." };
+  }
+
+  const history = await getExerciseFullHistory(session.user.id, exerciseId);
+  return { success: true as const, ...history };
 }
 
 export async function deleteExercise(id: string) {
