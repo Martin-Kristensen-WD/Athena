@@ -55,7 +55,7 @@ import {
   swapSessionExercise,
 } from "../../actions";
 import { RestTimer } from "./rest-timer";
-import { ExerciseStatsDialog } from "./exercise-stats-dialog";
+import { ExerciseStatsDialog } from "@/components/exercise-stats-dialog";
 
 type SetRow = {
   id: string;

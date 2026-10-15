@@ -10,6 +10,7 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  Trophy,
 } from "lucide-react";
 import {
   Card,
@@ -45,6 +46,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ExerciseFormDialog } from "@/components/exercise-form-dialog";
 import {
+  ExerciseStatsDialog,
+  type ExerciseStats,
+} from "@/components/exercise-stats-dialog";
+import {
   MUSCLE_GROUP_OPTIONS,
   type ExerciseFormInput,
 } from "@/lib/validations/exercises";
@@ -52,6 +57,7 @@ import type { exercises } from "@/db/schema";
 import {
   createExercise,
   deleteExercise,
+  getExerciseStats,
   updateCatalogExercise,
   updateExercise,
 } from "./exercises-actions";
@@ -80,6 +86,8 @@ export function ExercisesTabClient({
   const [isDeleting, startDeleteTransition] = useTransition();
   const [catalogQuery, setCatalogQuery] = useState("");
   const [catalogExpanded, setCatalogExpanded] = useState(false);
+  const [statsExercise, setStatsExercise] = useState<ExerciseStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   function openCreate() {
     setEditing(null);
@@ -124,6 +132,23 @@ export function ExercisesTabClient({
       toast.success(editing || catalogEditing ? "Øvelse opdateret" : "Øvelse oprettet");
     }
     return result;
+  }
+
+  async function openStats(exercise: ExerciseRow) {
+    setStatsExercise({ name: exercise.name, allTimeBest: null, last: null });
+    setStatsLoading(true);
+    const result = await getExerciseStats(exercise.id);
+    setStatsLoading(false);
+    if (!result || "error" in result) {
+      toast.error(result?.error ?? "Kunne ikke hente statistik.");
+      setStatsExercise(null);
+      return;
+    }
+    setStatsExercise({
+      name: exercise.name,
+      allTimeBest: result.allTimeBest,
+      last: result.last,
+    });
   }
 
   function confirmDelete() {
@@ -223,6 +248,14 @@ export function ExercisesTabClient({
                         <Button
                           variant="ghost"
                           size="icon-sm"
+                          onClick={() => openStats(exercise)}
+                        >
+                          <Trophy />
+                          <span className="sr-only">Statistik</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
                           onClick={() => openEdit(exercise)}
                         >
                           <Pencil />
@@ -301,6 +334,14 @@ export function ExercisesTabClient({
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => openStats(exercise)}
+                          >
+                            <Trophy />
+                            <span className="sr-only">Statistik</span>
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon-sm"
@@ -394,6 +435,12 @@ export function ExercisesTabClient({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ExerciseStatsDialog
+        exercise={statsExercise}
+        loading={statsLoading}
+        onOpenChange={(open) => !open && setStatsExercise(null)}
+      />
     </div>
   );
 }

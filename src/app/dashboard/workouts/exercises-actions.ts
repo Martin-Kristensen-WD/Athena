@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { exerciseFormSchema, type ExerciseFormInput } from "@/lib/validations/exercises";
 import { isForeignKeyViolation, isUniqueViolation } from "@/lib/db-errors";
 import { toTitleCase } from "@/lib/text";
+import { getExerciseHistory } from "./sessions/live-queries";
 
 function normalize(values: ExerciseFormInput) {
   return {
@@ -127,6 +128,25 @@ export async function updateCatalogExercise(id: string, values: ExerciseFormInpu
   revalidatePath("/dashboard/workouts");
   revalidatePath("/admin/exercises");
   return { success: true };
+}
+
+/** All-time PR and last-time performance for one exercise, for the trophy
+ * stats popup on the exercise catalog. */
+export async function getExerciseStats(exerciseId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { error: "Du skal være logget ind." };
+  }
+
+  const { last, allTimeBest } = await getExerciseHistory(session.user.id, [
+    exerciseId,
+  ]);
+
+  return {
+    success: true as const,
+    allTimeBest: allTimeBest.get(exerciseId) ?? null,
+    last: last.get(exerciseId) ?? null,
+  };
 }
 
 export async function deleteExercise(id: string) {
