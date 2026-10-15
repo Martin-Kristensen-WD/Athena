@@ -180,6 +180,8 @@ export type ExerciseSessionLog = {
 
 export type ExerciseFullHistory = {
   allTimeBest: ExerciseAllTimeBest | null;
+  /** Total sets ever logged for this exercise, across all sessions. */
+  totalSets: number;
   /** Number of distinct completed sessions this exercise was logged in. */
   sessionCount: number;
   first: ExerciseSessionLog | null;
@@ -231,7 +233,13 @@ export async function getExerciseFullHistory(
     .orderBy(desc(workoutSessions.startedAt), asc(workoutSessionSets.setIndex));
 
   if (rows.length === 0) {
-    return { allTimeBest: null, sessionCount: 0, first: null, recent: [] };
+    return {
+      allTimeBest: null,
+      totalSets: 0,
+      sessionCount: 0,
+      first: null,
+      recent: [],
+    };
   }
 
   // Rows arrive newest-session-first; group them into per-session logs while
@@ -271,7 +279,13 @@ export async function getExerciseFullHistory(
     .filter((log) => log.sessionId !== first.sessionId)
     .slice(0, RECENT_SESSIONS_LIMIT);
 
-  return { allTimeBest, sessionCount: sessionLogs.length, first, recent };
+  return {
+    allTimeBest,
+    totalSets: rows.length,
+    sessionCount: sessionLogs.length,
+    first,
+    recent,
+  };
 }
 
 /**

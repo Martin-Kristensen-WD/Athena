@@ -153,6 +153,7 @@ export function ExercisesTabClient({
     }
     setStatsHistory({
       allTimeBest: result.allTimeBest,
+      totalSets: result.totalSets,
       sessionCount: result.sessionCount,
       first: result.first,
       recent: result.recent,

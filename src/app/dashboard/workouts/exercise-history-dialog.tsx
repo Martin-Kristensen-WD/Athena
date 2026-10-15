@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Repeat, Trophy } from "lucide-react";
+import { CalendarCheck, Hash, Loader2, Trophy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -101,27 +101,37 @@ export function ExerciseHistoryDialog({
           </p>
         ) : (
           <div className="grid max-h-[70vh] gap-5 overflow-y-auto pr-1">
+            <StatTile
+              icon={Trophy}
+              iconClassName="bg-amber-400/15 text-amber-500"
+              label="All time PR"
+            >
+              {history.allTimeBest ? (
+                <p className="font-mono text-lg font-semibold tabular-nums">
+                  {history.allTimeBest.weight} × {history.allTimeBest.reps}
+                  <span className="ml-1.5 font-sans text-xs font-normal text-muted-foreground">
+                    {formatDate(history.allTimeBest.date)}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">–</p>
+              )}
+            </StatTile>
+
             <div className="grid grid-cols-2 gap-2">
               <StatTile
-                icon={Trophy}
-                iconClassName="bg-amber-400/15 text-amber-500"
-                label="Alle tiders rekord"
+                icon={Hash}
+                iconClassName="bg-primary/10 text-primary"
+                label="Antal sæt"
               >
-                {history.allTimeBest ? (
-                  <p className="font-mono text-lg font-semibold tabular-nums">
-                    {history.allTimeBest.weight} × {history.allTimeBest.reps}
-                    <span className="mt-0.5 block font-sans text-[11px] font-normal text-muted-foreground">
-                      {formatDate(history.allTimeBest.date)}
-                    </span>
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">–</p>
-                )}
+                <p className="font-mono text-lg font-semibold tabular-nums">
+                  {history.totalSets}
+                </p>
               </StatTile>
               <StatTile
-                icon={Repeat}
+                icon={CalendarCheck}
                 iconClassName="bg-primary/10 text-primary"
-                label="Gange trænet"
+                label="Antal træningspas"
               >
                 <p className="font-mono text-lg font-semibold tabular-nums">
                   {history.sessionCount}
