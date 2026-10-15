@@ -172,6 +172,108 @@ export async function getExerciseHistory(
   return { last, allTimeBest };
 }
 
+export type ExerciseSessionLog = {
+  sessionId: string;
+  date: string;
+  sets: { reps: number | null; weight: string | null }[];
+};
+
+export type ExerciseFullHistory = {
+  allTimeBest: ExerciseAllTimeBest | null;
+  /** Number of distinct completed sessions this exercise was logged in. */
+  sessionCount: number;
+  first: ExerciseSessionLog | null;
+  /** Most recent sessions, newest first, excluding `first` (so the two
+   * never show the same session twice when there's little history). */
+  recent: ExerciseSessionLog[];
+};
+
+const RECENT_SESSIONS_LIMIT = 3;
+
+/**
+ * One exercise's full history for the catalog's stats popup: all-time PR,
+ * how many sessions it's been logged in, the very first one, and the most
+ * recent ones.
+ */
+export async function getExerciseFullHistory(
+  userId: string,
+  exerciseId: string
+): Promise<ExerciseFullHistory> {
+  const db = getDb();
+
+  const rows = await db
+    .select({
+      sessionId: workoutSessionSets.sessionId,
+      startedAt: workoutSessions.startedAt,
+      setIndex: workoutSessionSets.setIndex,
+      reps: workoutSessionSets.reps,
+      weight: workoutSessionSets.weight,
+    })
+    .from(workoutSessionSets)
+    .innerJoin(
+      workoutSessions,
+      eq(workoutSessions.id, workoutSessionSets.sessionId)
+    )
+    .leftJoin(
+      programmeExercises,
+      eq(programmeExercises.id, workoutSessionSets.programmeExerciseId)
+    )
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        eq(workoutSessions.status, "completed"),
+        or(
+          eq(workoutSessionSets.exerciseId, exerciseId),
+          eq(programmeExercises.exerciseId, exerciseId)
+        )
+      )
+    )
+    .orderBy(desc(workoutSessions.startedAt), asc(workoutSessionSets.setIndex));
+
+  if (rows.length === 0) {
+    return { allTimeBest: null, sessionCount: 0, first: null, recent: [] };
+  }
+
+  // Rows arrive newest-session-first; group them into per-session logs while
+  // keeping that order, and track the heaviest set seen along the way.
+  const sessionOrder: string[] = [];
+  const bySession = new Map<string, ExerciseSessionLog>();
+  let allTimeBest: ExerciseAllTimeBest | null = null;
+
+  for (const row of rows) {
+    let log = bySession.get(row.sessionId);
+    if (!log) {
+      log = {
+        sessionId: row.sessionId,
+        date: row.startedAt.toISOString().slice(0, 10),
+        sets: [],
+      };
+      bySession.set(row.sessionId, log);
+      sessionOrder.push(row.sessionId);
+    }
+    log.sets.push({ reps: row.reps, weight: row.weight });
+
+    if (row.weight !== null) {
+      const weight = Number(row.weight);
+      if (!allTimeBest || weight > allTimeBest.weight) {
+        allTimeBest = {
+          weight,
+          reps: row.reps ?? 0,
+          date: row.startedAt.toISOString().slice(0, 10),
+        };
+      }
+    }
+  }
+
+  const sessionLogs = sessionOrder.map((id) => bySession.get(id)!); // newest first
+  const first = sessionLogs[sessionLogs.length - 1];
+  const recent = sessionLogs
+    .filter((log) => log.sessionId !== first.sessionId)
+    .slice(0, RECENT_SESSIONS_LIMIT);
+
+  return { allTimeBest, sessionCount: sessionLogs.length, first, recent };
+}
+
 /**
  * The full state of an in-progress session, normalised for the live logger.
  * Returns null if the session is not the user's, or is no longer active.

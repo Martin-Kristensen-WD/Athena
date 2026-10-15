@@ -8,7 +8,7 @@ import { auth } from "@/auth";
 import { exerciseFormSchema, type ExerciseFormInput } from "@/lib/validations/exercises";
 import { isForeignKeyViolation, isUniqueViolation } from "@/lib/db-errors";
 import { toTitleCase } from "@/lib/text";
-import { getExerciseHistory } from "./sessions/live-queries";
+import { getExerciseFullHistory } from "./sessions/live-queries";
 
 function normalize(values: ExerciseFormInput) {
   return {
@@ -130,23 +130,17 @@ export async function updateCatalogExercise(id: string, values: ExerciseFormInpu
   return { success: true };
 }
 
-/** All-time PR and last-time performance for one exercise, for the trophy
- * stats popup on the exercise catalog. */
+/** An exercise's full history for the trophy stats popup on the exercise
+ * catalog: all-time PR, how often it's been trained, and its first and most
+ * recent sessions. */
 export async function getExerciseStats(exerciseId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Du skal være logget ind." };
   }
 
-  const { last, allTimeBest } = await getExerciseHistory(session.user.id, [
-    exerciseId,
-  ]);
-
-  return {
-    success: true as const,
-    allTimeBest: allTimeBest.get(exerciseId) ?? null,
-    last: last.get(exerciseId) ?? null,
-  };
+  const history = await getExerciseFullHistory(session.user.id, exerciseId);
+  return { success: true as const, ...history };
 }
 
 export async function deleteExercise(id: string) {

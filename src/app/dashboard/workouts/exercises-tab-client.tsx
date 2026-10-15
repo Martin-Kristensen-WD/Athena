@@ -46,14 +46,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ExerciseFormDialog } from "@/components/exercise-form-dialog";
 import {
-  ExerciseStatsDialog,
-  type ExerciseStats,
-} from "@/components/exercise-stats-dialog";
+  ExerciseHistoryDialog,
+  type ExerciseHistoryTarget,
+} from "./exercise-history-dialog";
 import {
   MUSCLE_GROUP_OPTIONS,
   type ExerciseFormInput,
 } from "@/lib/validations/exercises";
 import type { exercises } from "@/db/schema";
+import type { ExerciseFullHistory } from "./sessions/live-queries";
 import {
   createExercise,
   deleteExercise,
@@ -86,7 +87,12 @@ export function ExercisesTabClient({
   const [isDeleting, startDeleteTransition] = useTransition();
   const [catalogQuery, setCatalogQuery] = useState("");
   const [catalogExpanded, setCatalogExpanded] = useState(false);
-  const [statsExercise, setStatsExercise] = useState<ExerciseStats | null>(null);
+  const [statsTarget, setStatsTarget] = useState<ExerciseHistoryTarget | null>(
+    null
+  );
+  const [statsHistory, setStatsHistory] = useState<ExerciseFullHistory | null>(
+    null
+  );
   const [statsLoading, setStatsLoading] = useState(false);
 
   function openCreate() {
@@ -135,19 +141,21 @@ export function ExercisesTabClient({
   }
 
   async function openStats(exercise: ExerciseRow) {
-    setStatsExercise({ name: exercise.name, allTimeBest: null, last: null });
+    setStatsTarget({ id: exercise.id, name: exercise.name });
+    setStatsHistory(null);
     setStatsLoading(true);
     const result = await getExerciseStats(exercise.id);
     setStatsLoading(false);
     if (!result || "error" in result) {
       toast.error(result?.error ?? "Kunne ikke hente statistik.");
-      setStatsExercise(null);
+      setStatsTarget(null);
       return;
     }
-    setStatsExercise({
-      name: exercise.name,
+    setStatsHistory({
       allTimeBest: result.allTimeBest,
-      last: result.last,
+      sessionCount: result.sessionCount,
+      first: result.first,
+      recent: result.recent,
     });
   }
 
@@ -436,10 +444,11 @@ export function ExercisesTabClient({
         </AlertDialogContent>
       </AlertDialog>
 
-      <ExerciseStatsDialog
-        exercise={statsExercise}
+      <ExerciseHistoryDialog
+        target={statsTarget}
+        history={statsHistory}
         loading={statsLoading}
-        onOpenChange={(open) => !open && setStatsExercise(null)}
+        onOpenChange={(open) => !open && setStatsTarget(null)}
       />
     </div>
   );
