@@ -155,7 +155,7 @@ export function ExercisesTabClient({
       allTimeBest: result.allTimeBest,
       totalSets: result.totalSets,
       sessionCount: result.sessionCount,
-      first: result.first,
+      oneRmSeries: result.oneRmSeries,
       recent: result.recent,
     });
   }

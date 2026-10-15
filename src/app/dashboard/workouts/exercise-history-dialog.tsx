@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import type { ExerciseFullHistory, ExerciseSessionLog } from "./sessions/live-queries";
+import { TrendChart } from "../progress/trend-chart";
 
 export type ExerciseHistoryTarget = {
   id: string;
@@ -139,14 +140,17 @@ export function ExerciseHistoryDialog({
               </StatTile>
             </div>
 
-            {history.first && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">
-                  Første gang · {formatDate(history.first.date)}
-                </p>
-                <SessionSets sets={history.first.sets} />
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">
+                Udvikling (estimeret 1RM)
+              </p>
+              <div className="mt-1.5 rounded-lg bg-muted/30 pt-2">
+                <TrendChart
+                  data={history.oneRmSeries}
+                  emptyMessage="Registrér denne øvelse på mindst to forskellige dage for at se en graf."
+                />
               </div>
-            )}
+            </div>
 
             {history.recent.length > 0 && (
               <div>

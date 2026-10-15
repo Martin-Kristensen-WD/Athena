@@ -10,6 +10,7 @@ import {
   workoutSessionExerciseNotes,
   workoutSessionSets,
 } from "@/db/schema";
+import { round1, setOneRepMax } from "@/lib/strength";
 
 // Fallback rest when a programme exercise has no `restSeconds`, and for
 // freeform sessions where there is no plan to read it from.
@@ -184,9 +185,9 @@ export type ExerciseFullHistory = {
   totalSets: number;
   /** Number of distinct completed sessions this exercise was logged in. */
   sessionCount: number;
-  first: ExerciseSessionLog | null;
-  /** Most recent sessions, newest first, excluding `first` (so the two
-   * never show the same session twice when there's little history). */
+  /** Best estimated 1RM per session date, ascending — the progress graph. */
+  oneRmSeries: { date: string; value: number }[];
+  /** Most recent sessions, newest first. */
   recent: ExerciseSessionLog[];
 };
 
@@ -194,8 +195,8 @@ const RECENT_SESSIONS_LIMIT = 3;
 
 /**
  * One exercise's full history for the catalog's stats popup: all-time PR,
- * how many sessions it's been logged in, the very first one, and the most
- * recent ones.
+ * how many sessions it's been logged in, its estimated-1RM trend, and the
+ * most recent sessions.
  */
 export async function getExerciseFullHistory(
   userId: string,
@@ -237,53 +238,54 @@ export async function getExerciseFullHistory(
       allTimeBest: null,
       totalSets: 0,
       sessionCount: 0,
-      first: null,
+      oneRmSeries: [],
       recent: [],
     };
   }
 
   // Rows arrive newest-session-first; group them into per-session logs while
-  // keeping that order, and track the heaviest set seen along the way.
+  // keeping that order, and track the heaviest set and best estimated 1RM
+  // seen along the way.
   const sessionOrder: string[] = [];
   const bySession = new Map<string, ExerciseSessionLog>();
+  const bestOneRmByDate = new Map<string, number>();
   let allTimeBest: ExerciseAllTimeBest | null = null;
 
   for (const row of rows) {
+    const date = row.startedAt.toISOString().slice(0, 10);
+
     let log = bySession.get(row.sessionId);
     if (!log) {
-      log = {
-        sessionId: row.sessionId,
-        date: row.startedAt.toISOString().slice(0, 10),
-        sets: [],
-      };
+      log = { sessionId: row.sessionId, date, sets: [] };
       bySession.set(row.sessionId, log);
       sessionOrder.push(row.sessionId);
     }
     log.sets.push({ reps: row.reps, weight: row.weight });
 
-    if (row.weight !== null) {
-      const weight = Number(row.weight);
-      if (!allTimeBest || weight > allTimeBest.weight) {
-        allTimeBest = {
-          weight,
-          reps: row.reps ?? 0,
-          date: row.startedAt.toISOString().slice(0, 10),
-        };
-      }
+    const weight = row.weight !== null ? Number(row.weight) : null;
+
+    if (weight !== null && (!allTimeBest || weight > allTimeBest.weight)) {
+      allTimeBest = { weight, reps: row.reps ?? 0, date };
+    }
+
+    const oneRm = setOneRepMax({ weight, reps: row.reps });
+    if (oneRm !== null) {
+      const prior = bestOneRmByDate.get(date) ?? 0;
+      if (oneRm > prior) bestOneRmByDate.set(date, oneRm);
     }
   }
 
   const sessionLogs = sessionOrder.map((id) => bySession.get(id)!); // newest first
-  const first = sessionLogs[sessionLogs.length - 1];
-  const recent = sessionLogs
-    .filter((log) => log.sessionId !== first.sessionId)
-    .slice(0, RECENT_SESSIONS_LIMIT);
+  const recent = sessionLogs.slice(0, RECENT_SESSIONS_LIMIT);
+  const oneRmSeries = [...bestOneRmByDate.entries()]
+    .map(([date, value]) => ({ date, value: round1(value) }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
 
   return {
     allTimeBest,
     totalSets: rows.length,
     sessionCount: sessionLogs.length,
-    first,
+    oneRmSeries,
     recent,
   };
 }
