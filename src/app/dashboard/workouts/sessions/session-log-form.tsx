@@ -36,6 +36,7 @@ export type PlannedExercise = {
   exerciseName: string;
   sets: number;
   targetReps: string;
+  setTargetReps: string[] | null;
   targetWeight: string | null;
 };
 
@@ -156,7 +157,10 @@ export function SessionLogForm({
                                 <FormControl>
                                   <Input
                                     type="number"
-                                    placeholder={exercise.targetReps}
+                                    placeholder={
+                                      exercise.setTargetReps?.[setIndex] ??
+                                      exercise.targetReps
+                                    }
                                     className="w-20"
                                     {...field}
                                     value={

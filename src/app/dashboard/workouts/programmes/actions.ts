@@ -42,6 +42,7 @@ export async function createProgramme(values: ProgrammeInput) {
           orderIndex: index,
           sets: exercise.sets,
           targetReps: exercise.targetReps,
+          setTargetReps: exercise.setTargetReps ?? null,
           targetWeight:
             exercise.targetWeight !== undefined
               ? exercise.targetWeight.toString()
@@ -115,6 +116,7 @@ export async function updateProgramme(
           orderIndex: index,
           sets: exercise.sets,
           targetReps: exercise.targetReps,
+          setTargetReps: exercise.setTargetReps ?? null,
           targetWeight:
             exercise.targetWeight !== undefined
               ? exercise.targetWeight.toString()

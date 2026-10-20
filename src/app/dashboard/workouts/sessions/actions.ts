@@ -43,7 +43,7 @@ import {
   type SwapSessionExerciseInput,
   type WorkoutSessionInput,
 } from "@/lib/validations/sessions";
-import { getActiveSessionId } from "./live-queries";
+import { getActiveSessionId, getExerciseHistory } from "./live-queries";
 
 export async function createWorkoutSession(values: WorkoutSessionInput) {
   const session = await auth();
@@ -460,7 +460,15 @@ export async function addSessionExercise(input: AddSessionExerciseInput) {
     .insert(workoutSessionSets)
     .values({ id: setId, sessionId, exerciseId, setIndex: 0 });
 
-  return { success: true as const, setId, exercise };
+  const history = await getExerciseHistory(session.user.id, [exerciseId]);
+
+  return {
+    success: true as const,
+    setId,
+    exercise,
+    last: history.last.get(exerciseId) ?? null,
+    allTimeBest: history.allTimeBest.get(exerciseId) ?? null,
+  };
 }
 
 export async function removeSessionExercise(input: RemoveSessionExerciseInput) {
@@ -559,7 +567,14 @@ export async function swapSessionExercise(input: SwapSessionExerciseInput) {
       );
   });
 
-  return { success: true as const, exercise };
+  const history = await getExerciseHistory(session.user.id, [exerciseId]);
+
+  return {
+    success: true as const,
+    exercise,
+    last: history.last.get(exerciseId) ?? null,
+    allTimeBest: history.allTimeBest.get(exerciseId) ?? null,
+  };
 }
 
 export async function saveSessionExerciseNote(

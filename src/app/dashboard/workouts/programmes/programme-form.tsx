@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   useFieldArray,
   useForm,
+  useFormContext,
   useWatch,
   type Control,
 } from "react-hook-form";
@@ -46,6 +47,16 @@ export type { ExerciseOption };
 type ProgrammeFormValues = z.input<typeof programmeSchema>;
 
 const MAX_DAYS = 7;
+// Top-level sections sit on the page background as cards; exercises inside a
+// day are borderless tiles one step lighter, with their inputs recessed back
+// to the card colour so each tile reads as one unit.
+const SECTION_SURFACE =
+  "rounded-2xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-black/[0.04] sm:p-5 dark:shadow-none dark:ring-white/[0.04]";
+const EXERCISE_TILE =
+  "rounded-xl bg-muted p-3 [&_[data-slot=input]]:bg-card dark:[&_[data-slot=input]]:bg-card";
+// Upper bound on per-set rep inputs rendered, so a mistyped set count (e.g.
+// 300) doesn't flood the form with fields.
+const MAX_PER_SET_INPUTS = 20;
 
 function formatMuscleGroup(value: string) {
   return value.replace(/_/g, " ");
@@ -208,7 +219,7 @@ export function ProgrammeForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className={cn(SECTION_SURFACE, "grid gap-4 sm:grid-cols-2")}>
           <FormField
             control={form.control}
             name="name"
@@ -241,7 +252,7 @@ export function ProgrammeForm({
           />
         </div>
 
-        <div className="grid gap-2">
+        <div className={cn(SECTION_SURFACE, "grid gap-2")}>
           <h2 className="text-sm font-medium">Ugentlig volumen</h2>
           {weeklyMuscleGroupVolume.length > 0 ? (
             <MuscleGroupVolumeSummary totals={weeklyMuscleGroupVolume} />
@@ -415,7 +426,7 @@ function ProgrammeDayCard({
   }
 
   return (
-    <div className="rounded-lg border p-4">
+    <div className={SECTION_SURFACE}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <FormField
           control={control}
@@ -481,7 +492,7 @@ function ProgrammeDayCard({
         />
 
         {fields.length === 0 ? (
-          <p className="text-muted-foreground mt-3 rounded-lg border border-dashed p-6 text-center text-sm">
+          <p className="text-muted-foreground mt-3 rounded-xl border border-dashed p-6 text-center text-sm">
             Ingen øvelser endnu. Tilføj en for at komme i gang.
           </p>
         ) : (
@@ -499,8 +510,9 @@ function ProgrammeDayCard({
                 <div
                   key={field.id}
                   className={cn(
-                    "rounded-lg border p-3",
-                    supersetLabel && "bg-accent/40"
+                    EXERCISE_TILE,
+                    supersetLabel &&
+                      "bg-primary/10 ring-1 ring-primary/25 dark:bg-primary/10"
                   )}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -627,20 +639,10 @@ function ProgrammeDayCard({
                         </FormItem>
                       )}
                     />
-                    <FormField
+                    <TargetRepsField
                       control={control}
-                      name={`days.${dayIndex}.exercises.${index}.targetReps`}
-                      render={({ field: repsField }) => (
-                        <FormItem>
-                          <FormLabel className="text-muted-foreground text-xs font-normal">
-                            Mål-reps
-                          </FormLabel>
-                          <FormControl>
-                            <Input placeholder="8-12" {...repsField} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      dayIndex={dayIndex}
+                      exerciseIndex={index}
                     />
                     <FormField
                       control={control}
@@ -693,6 +695,12 @@ function ProgrammeDayCard({
                     />
                   </div>
 
+                  <PerSetTargetReps
+                    control={control}
+                    dayIndex={dayIndex}
+                    exerciseIndex={index}
+                  />
+
                   <FormField
                     control={control}
                     name={`days.${dayIndex}.exercises.${index}.notes`}
@@ -724,6 +732,144 @@ function ProgrammeDayCard({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/** The single "Mål-reps" input; shows a read-only summary when per-set targets are on. */
+function TargetRepsField({
+  control,
+  dayIndex,
+  exerciseIndex,
+}: {
+  control: Control<ProgrammeFormValues>;
+  dayIndex: number;
+  exerciseIndex: number;
+}) {
+  const setTargetReps = useWatch({
+    control,
+    name: `days.${dayIndex}.exercises.${exerciseIndex}.setTargetReps`,
+  });
+
+  if (setTargetReps) {
+    return (
+      <div className="grid gap-2">
+        <span className="text-muted-foreground text-xs">Mål-reps</span>
+        <Input
+          disabled
+          value={setTargetReps.map((reps) => reps || "–").join("/")}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <FormField
+      control={control}
+      name={`days.${dayIndex}.exercises.${exerciseIndex}.targetReps`}
+      render={({ field: repsField }) => (
+        <FormItem>
+          <FormLabel className="text-muted-foreground text-xs font-normal">
+            Mål-reps
+          </FormLabel>
+          <FormControl>
+            <Input placeholder="8-12" {...repsField} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+/**
+ * Toggle plus one rep input per set. While on, the per-set list is kept the
+ * same length as the set count: added sets copy the last set's target,
+ * removed sets drop off the end.
+ */
+function PerSetTargetReps({
+  control,
+  dayIndex,
+  exerciseIndex,
+}: {
+  control: Control<ProgrammeFormValues>;
+  dayIndex: number;
+  exerciseIndex: number;
+}) {
+  const { setValue, getValues } = useFormContext<ProgrammeFormValues>();
+  const basePath = `days.${dayIndex}.exercises.${exerciseIndex}` as const;
+  const setTargetReps = useWatch({ control, name: `${basePath}.setTargetReps` });
+  const rawSets = useWatch({ control, name: `${basePath}.sets` });
+  const setCount = Number(rawSets);
+  const validSetCount =
+    Number.isInteger(setCount) && setCount >= 1 && setCount <= MAX_PER_SET_INPUTS
+      ? setCount
+      : null;
+
+  const enabled = Boolean(setTargetReps);
+  const currentLength = setTargetReps?.length ?? 0;
+
+  useEffect(() => {
+    if (!enabled || validSetCount === null || currentLength === validSetCount) {
+      return;
+    }
+    const current = getValues(`${basePath}.setTargetReps`) ?? [];
+    const fill = current[current.length - 1] ?? getValues(`${basePath}.targetReps`) ?? "";
+    const resized = Array.from(
+      { length: validSetCount },
+      (_, i) => current[i] ?? fill
+    );
+    setValue(`${basePath}.setTargetReps`, resized, { shouldDirty: true });
+  }, [enabled, validSetCount, currentLength, basePath, getValues, setValue]);
+
+  function toggle(checked: boolean) {
+    if (checked) {
+      const base = getValues(`${basePath}.targetReps`) ?? "";
+      setValue(
+        `${basePath}.setTargetReps`,
+        Array.from({ length: validSetCount ?? 1 }, () => base),
+        { shouldDirty: true }
+      );
+    } else {
+      const first = getValues(`${basePath}.setTargetReps`)?.[0];
+      if (first) {
+        setValue(`${basePath}.targetReps`, first, { shouldDirty: true });
+      }
+      setValue(`${basePath}.setTargetReps`, undefined, { shouldDirty: true });
+    }
+  }
+
+  return (
+    <div className="mt-3 grid gap-2">
+      <label className="flex w-fit items-center gap-2 text-sm">
+        <Checkbox
+          checked={enabled}
+          onCheckedChange={(checked) => toggle(Boolean(checked))}
+        />
+        Forskellige reps pr. sæt
+      </label>
+      {enabled && setTargetReps && (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {setTargetReps.map((_, setIndex) => (
+            <FormField
+              key={setIndex}
+              control={control}
+              name={`${basePath}.setTargetReps.${setIndex}`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-muted-foreground text-xs font-normal">
+                    Sæt {setIndex + 1}
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="8-12" {...field} value={field.value ?? ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

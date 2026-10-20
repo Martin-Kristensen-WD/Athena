@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { setActiveProgramme } from "./actions";
@@ -42,10 +43,18 @@ export function ActiveProgrammeToggle({
       }}
       className={cn(
         active &&
-          "border-primary bg-primary/10 text-primary hover:bg-primary/15 dark:bg-primary/15 dark:hover:bg-primary/20"
+          "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
       )}
     >
-      {isPending ? "Opdaterer..." : active ? "Aktivt program" : "Sæt som aktiv program"}
+      {isPending ? (
+        "Opdaterer..."
+      ) : active ? (
+        <>
+          <Check /> Aktivt program
+        </>
+      ) : (
+        "Sæt som aktiv program"
+      )}
     </Button>
   );
 }

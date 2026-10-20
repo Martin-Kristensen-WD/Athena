@@ -44,6 +44,7 @@ export default async function ProgrammePage(
         orderIndex: programmeExercises.orderIndex,
         sets: programmeExercises.sets,
         targetReps: programmeExercises.targetReps,
+        setTargetReps: programmeExercises.setTargetReps,
         targetWeight: programmeExercises.targetWeight,
         restSeconds: programmeExercises.restSeconds,
         notes: programmeExercises.notes,
@@ -91,6 +92,7 @@ export default async function ProgrammePage(
         muscleGroup: exerciseNameById.get(row.exerciseId)?.muscleGroup,
         sets: row.sets,
         targetReps: row.targetReps,
+        setTargetReps: row.setTargetReps ?? undefined,
         targetWeight:
           row.targetWeight != null ? Number(row.targetWeight) : undefined,
         restSeconds: row.restSeconds ?? undefined,

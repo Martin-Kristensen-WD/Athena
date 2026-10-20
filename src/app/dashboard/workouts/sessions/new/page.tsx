@@ -232,6 +232,7 @@ export default async function NewSessionPage(
       exerciseName: exercises.name,
       sets: programmeExercises.sets,
       targetReps: programmeExercises.targetReps,
+      setTargetReps: programmeExercises.setTargetReps,
       targetWeight: programmeExercises.targetWeight,
     })
     .from(programmeExercises)

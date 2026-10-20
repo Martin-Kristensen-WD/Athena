@@ -94,10 +94,10 @@ export async function ProgrammesTab() {
               <Card
                 key={programme.id}
                 className={cn(
-                  "relative h-full transition-colors",
+                  "relative h-full ring-1 transition-colors",
                   isActive
-                    ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
-                    : "hover:bg-muted/50"
+                    ? "ring-primary/60 hover:bg-muted/40"
+                    : "ring-foreground/10 hover:bg-muted/40 hover:ring-foreground/15"
                 )}
               >
                 <Link

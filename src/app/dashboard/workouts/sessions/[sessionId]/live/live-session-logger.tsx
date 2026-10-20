@@ -447,8 +447,8 @@ export function LiveSessionLogger({
         coachNotes: null,
         note: null,
         target: null,
-        last: null,
-        allTimeBest: null,
+        last: result.last,
+        allTimeBest: result.allTimeBest,
         sets: [
           {
             id: result.setId,
@@ -503,7 +503,8 @@ export function LiveSessionLogger({
               equipment: ex.equipment,
               coachNotes: ex.notes,
               target: null,
-              last: null,
+              last: result.last,
+              allTimeBest: result.allTimeBest,
             }
       )
     );
@@ -824,9 +825,10 @@ export function LiveSessionLogger({
                         doneInput
                       )}
                       placeholder={
-                        lastSet?.reps != null
+                        group.target?.setReps?.[index] ??
+                        (lastSet?.reps != null
                           ? String(lastSet.reps)
-                          : group.target?.reps
+                          : group.target?.reps)
                       }
                       value={set.reps}
                       onChange={(event) =>
