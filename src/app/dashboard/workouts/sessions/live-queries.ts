@@ -46,6 +46,8 @@ export type LiveExercise = {
   target: {
     sets: number;
     reps: string;
+    /** Per-set rep targets by set index; null when every set uses `reps`. */
+    setReps: string[] | null;
     weight: string | null;
     restSeconds: number | null;
   } | null;
@@ -337,6 +339,7 @@ export async function loadLiveSession(
           order: programmeExercises.orderIndex,
           sets: programmeExercises.sets,
           targetReps: programmeExercises.targetReps,
+          setTargetReps: programmeExercises.setTargetReps,
           targetWeight: programmeExercises.targetWeight,
           restSeconds: programmeExercises.restSeconds,
         })
@@ -390,6 +393,7 @@ export async function loadLiveSession(
       target: {
         sets: p.sets,
         reps: p.targetReps,
+        setReps: p.setTargetReps,
         weight: p.targetWeight,
         restSeconds: p.restSeconds,
       },

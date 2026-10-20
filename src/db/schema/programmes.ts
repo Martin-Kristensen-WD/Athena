@@ -53,6 +53,10 @@ export const programmeExercises = pgTable(
     orderIndex: integer("order_index").notNull(),
     sets: integer("sets").notNull(),
     targetReps: text("target_reps").notNull(),
+    // Optional per-set rep targets (one entry per set, in set order). When
+    // null every set uses `targetReps`; when present `targetReps` holds a
+    // compact summary of these (e.g. "12/10/8") for one-line displays.
+    setTargetReps: text("set_target_reps").array(),
     targetWeight: numeric("target_weight"),
     restSeconds: integer("rest_seconds"),
     notes: text("notes"),

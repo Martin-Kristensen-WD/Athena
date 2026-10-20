@@ -825,9 +825,10 @@ export function LiveSessionLogger({
                         doneInput
                       )}
                       placeholder={
-                        lastSet?.reps != null
+                        group.target?.setReps?.[index] ??
+                        (lastSet?.reps != null
                           ? String(lastSet.reps)
-                          : group.target?.reps
+                          : group.target?.reps)
                       }
                       value={set.reps}
                       onChange={(event) =>

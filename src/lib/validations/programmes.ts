@@ -10,17 +10,44 @@ function optionalCoercedNumber<T extends z.ZodTypeAny>(schema: T) {
   );
 }
 
-export const programmeExerciseSchema = z.object({
-  exerciseId: z.string().uuid("Vælg en øvelse"),
-  exerciseName: z.string().optional(),
-  muscleGroup: z.string().optional(),
-  sets: z.coerce.number().int().positive("Angiv et antal sæt"),
-  targetReps: z.string().min(1, "Angiv mål-reps"),
-  targetWeight: optionalCoercedNumber(z.coerce.number().positive("Indtast en gyldig vægt")),
-  restSeconds: optionalCoercedNumber(z.coerce.number().int().nonnegative("Indtast en gyldig varighed")),
-  notes: z.string().optional(),
-  supersetWithNext: z.boolean().optional(),
-});
+export const programmeExerciseSchema = z
+  .object({
+    exerciseId: z.string().uuid("Vælg en øvelse"),
+    exerciseName: z.string().optional(),
+    muscleGroup: z.string().optional(),
+    sets: z.coerce.number().int().positive("Angiv et antal sæt"),
+    targetReps: z.string(),
+    // Per-set rep targets; absent means every set uses `targetReps`.
+    setTargetReps: z.array(z.string().trim().min(1, "Angiv reps")).optional(),
+    targetWeight: optionalCoercedNumber(z.coerce.number().positive("Indtast en gyldig vægt")),
+    restSeconds: optionalCoercedNumber(z.coerce.number().int().nonnegative("Indtast en gyldig varighed")),
+    notes: z.string().optional(),
+    supersetWithNext: z.boolean().optional(),
+  })
+  .superRefine((exercise, ctx) => {
+    if (exercise.setTargetReps) {
+      if (exercise.setTargetReps.length !== exercise.sets) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["setTargetReps"],
+          message: "Angiv reps for hvert sæt",
+        });
+      }
+    } else if (exercise.targetReps.trim().length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["targetReps"],
+        message: "Angiv mål-reps",
+      });
+    }
+  })
+  // With per-set targets, `targetReps` becomes their compact summary so
+  // one-line displays ("3 × 12/10/8") stay meaningful.
+  .transform((exercise) =>
+    exercise.setTargetReps
+      ? { ...exercise, targetReps: exercise.setTargetReps.join("/") }
+      : exercise
+  );
 
 export const programmeDaySchema = z.object({
   name: z.string().min(1, "Angiv et navn til dagen"),
