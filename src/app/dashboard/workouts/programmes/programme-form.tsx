@@ -47,6 +47,13 @@ export type { ExerciseOption };
 type ProgrammeFormValues = z.input<typeof programmeSchema>;
 
 const MAX_DAYS = 7;
+// Top-level sections sit on the page background as cards; exercises inside a
+// day are borderless tiles one step lighter, with their inputs recessed back
+// to the card colour so each tile reads as one unit.
+const SECTION_SURFACE =
+  "rounded-2xl bg-card p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] ring-1 ring-black/[0.04] sm:p-5 dark:shadow-none dark:ring-white/[0.04]";
+const EXERCISE_TILE =
+  "rounded-xl bg-muted p-3 [&_[data-slot=input]]:bg-card dark:[&_[data-slot=input]]:bg-card";
 // Upper bound on per-set rep inputs rendered, so a mistyped set count (e.g.
 // 300) doesn't flood the form with fields.
 const MAX_PER_SET_INPUTS = 20;
@@ -212,7 +219,7 @@ export function ProgrammeForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-6">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className={cn(SECTION_SURFACE, "grid gap-4 sm:grid-cols-2")}>
           <FormField
             control={form.control}
             name="name"
@@ -245,7 +252,7 @@ export function ProgrammeForm({
           />
         </div>
 
-        <div className="grid gap-2">
+        <div className={cn(SECTION_SURFACE, "grid gap-2")}>
           <h2 className="text-sm font-medium">Ugentlig volumen</h2>
           {weeklyMuscleGroupVolume.length > 0 ? (
             <MuscleGroupVolumeSummary totals={weeklyMuscleGroupVolume} />
@@ -419,7 +426,7 @@ function ProgrammeDayCard({
   }
 
   return (
-    <div className="rounded-lg border p-4">
+    <div className={SECTION_SURFACE}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <FormField
           control={control}
@@ -485,7 +492,7 @@ function ProgrammeDayCard({
         />
 
         {fields.length === 0 ? (
-          <p className="text-muted-foreground mt-3 rounded-lg border border-dashed p-6 text-center text-sm">
+          <p className="text-muted-foreground mt-3 rounded-xl border border-dashed p-6 text-center text-sm">
             Ingen øvelser endnu. Tilføj en for at komme i gang.
           </p>
         ) : (
@@ -503,8 +510,9 @@ function ProgrammeDayCard({
                 <div
                   key={field.id}
                   className={cn(
-                    "rounded-lg border p-3",
-                    supersetLabel && "bg-accent/40"
+                    EXERCISE_TILE,
+                    supersetLabel &&
+                      "bg-primary/10 ring-1 ring-primary/25 dark:bg-primary/10"
                   )}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">

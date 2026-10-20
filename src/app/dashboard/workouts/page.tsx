@@ -13,7 +13,7 @@ import { SharesTab } from "./shares-tab";
 
 const tabButton = cn(
   buttonVariants({ variant: "outline", size: "sm" }),
-  "h-8 flex-none after:hidden data-active:border-transparent data-active:bg-secondary data-active:text-secondary-foreground dark:data-active:bg-secondary"
+  "h-8 flex-none bg-transparent after:hidden data-active:border-transparent data-active:bg-card data-active:text-foreground data-active:shadow-[0_1px_3px_rgba(0,0,0,0.06)] dark:data-active:bg-secondary dark:data-active:text-secondary-foreground dark:data-active:shadow-none"
 );
 
 export default async function WorkoutsPage() {

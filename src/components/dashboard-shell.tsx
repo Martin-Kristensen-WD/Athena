@@ -182,7 +182,7 @@ export function DashboardShell({
                   <SidebarMenuButton
                     isActive={isActive}
                     render={<Link href={item.href} />}
-                    className="h-11 gap-3 pl-4 text-sm"
+                    className="h-11 gap-3 pl-4 text-sm data-active:shadow-[0_1px_3px_rgba(0,0,0,0.06)] data-active:ring-1 data-active:ring-black/[0.04] dark:data-active:shadow-none dark:data-active:ring-0"
                   >
                     <span
                       className={cn(
@@ -205,7 +205,7 @@ export function DashboardShell({
           <UserMenu user={user} />
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="m-2 md:ml-0 rounded-2xl bg-card shadow-[0_1px_2px_rgba(20,20,18,0.05)] ring-1 ring-border">
+      <SidebarInset className="m-2 md:ml-0 rounded-2xl bg-background">
         <header className="flex items-center justify-center border-b border-border px-4 py-2.5 md:hidden">
           <Link href="/dashboard" aria-label="Dashboard">
             <Logo className="h-6 w-auto" priority />
